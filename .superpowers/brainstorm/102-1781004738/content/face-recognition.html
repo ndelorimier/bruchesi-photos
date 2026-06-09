@@ -1,0 +1,51 @@
+<h2>Où tourne la reconnaissance faciale ?</h2>
+<p class="subtitle">Décision clé : vie privée des enfants, coût, puissance requise sur le NAS</p>
+
+<div class="options">
+
+  <div class="option" data-choice="local" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>100 % local sur le NAS (CompreFace / DeepFace)</h3>
+      <p>Container Docker open-source sur le Synology. Les photos ne quittent jamais le camp.</p>
+      <div style="background:#1a2a1a;border-radius:8px;padding:12px;margin:10px 0;font-family:monospace;font-size:12px;color:#7fff7f;">
+        📸 Photo uploadée → NAS → CompreFace (Docker) → tag enfant → notif parent
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pour</h4><ul><li>Vie privée totale (LPRPDE/Québec 25)</li><li>0 $ par photo</li><li>Fonctionne sans internet</li></ul></div>
+        <div class="cons"><h4>Contre</h4><ul><li>NAS doit supporter Docker (DS923+, DS1522+...)</li><li>Setup plus technique</li><li>Précision dépend du modèle NAS</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="cloud" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>API Cloud (AWS Rekognition / Azure Face)</h3>
+      <p>Les photos sont envoyées à un service cloud pour matching. Retour quasi-instantané.</p>
+      <div style="background:#1a1a2a;border-radius:8px;padding:12px;margin:10px 0;font-family:monospace;font-size:12px;color:#7f9fff;">
+        📸 Photo uploadée → NAS → AWS Rekognition → match → tag → notif parent
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pour</h4><ul><li>Précision excellente</li><li>Pas de contrainte matérielle NAS</li><li>Rapide à intégrer</li></ul></div>
+        <div class="cons"><h4>Contre</h4><ul><li>Photos d'enfants envoyées à AWS (~0,001 $/photo)</li><li>Dépend d'internet au camp</li><li>Enjeux légaux (Loi 25 Québec)</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="synology" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Synology Photos (face recognition intégré)</h3>
+      <p>Utiliser la reconnaissance faciale native de Synology Photos comme moteur, et brancher l'app par-dessus via l'API Synology.</p>
+      <div style="background:#2a1a1a;border-radius:8px;padding:12px;margin:10px 0;font-family:monospace;font-size:12px;color:#ff9f7f;">
+        📸 Upload → Synology Photos → face detection natif → API → notif parent
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pour</h4><ul><li>Déjà intégré au NAS</li><li>100 % local</li><li>Moins de setup Docker</li></ul></div>
+        <div class="cons"><h4>Contre</h4><ul><li>API Synology moins flexible</li><li>Couplé à l'écosystème Synology</li><li>Moins de contrôle sur les seuils de précision</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>

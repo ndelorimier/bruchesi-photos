@@ -1,0 +1,40 @@
+<h2>Comment les parents accèdent-ils à l'app ?</h2>
+<p class="subtitle">Ce choix détermine tout : notifications, distribution, développement, maintenance</p>
+
+<div class="options">
+  <div class="option" data-choice="pwa" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Application Web Progressive (PWA)</h3>
+      <p>Site web installable sur l'écran d'accueil du téléphone. Notifications push via le navigateur. Aucun App Store. Mise à jour automatique. Fonctionne sur iOS &amp; Android.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Avantages</h4><ul><li>Déployable en semaines</li><li>Pas de frais App Store</li><li>Une seule codebase</li><li>Hébergeable sur NAS</li></ul></div>
+        <div class="cons"><h4>Limites</h4><ul><li>Notifications iOS limitées (iOS 16.4+)</li><li>Expérience légèrement moins native</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="native" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>App Native (React Native / Expo)</h3>
+      <p>Vraie app iOS + Android distribuée via App Store et Google Play. Notifications push complètes (FCM/APNs). Accès caméra natif pour la selfie station.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Avantages</h4><ul><li>Notifications fiables et riches</li><li>Expérience native optimale</li><li>Caméra/biométrie accès complet</li></ul></div>
+        <div class="cons"><h4>Limites</h4><ul><li>Comptes développeur ($99/an Apple)</li><li>Délai de review App Store</li><li>Plus complexe à maintenir</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>PWA + Notifications par email/SMS</h3>
+      <p>Web app simple, sans installation obligatoire. Les alertes se font par email ou SMS (Twilio/Brevo) plutôt que par push natif. Le plus simple à construire.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Avantages</h4><ul><li>Zéro friction pour le parent</li><li>Aucune installation requise</li><li>Déploiement immédiat</li></ul></div>
+        <div class="cons"><h4>Limites</h4><ul><li>Notifications moins immédiates</li><li>Dépend d'un service externe (SMS $)</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

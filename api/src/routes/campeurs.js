@@ -37,7 +37,7 @@ router.get('/', ...staffOnly, async (req, res) => {
 router.post('/:id/enroll-profile', ...staffOnly, upload.memory.single('file'), async (req, res) => {
   try {
     const campeurId = Number(req.params.id);
-    const type = req.body.type || 'selfie_station';
+    const type = req.body.type || 'SELFIE_STATION';
 
     const campeur = await prisma.campeur.findUnique({ where: { id: campeurId } });
     if (!campeur) return res.status(404).json({ error: 'Campeur introuvable' });

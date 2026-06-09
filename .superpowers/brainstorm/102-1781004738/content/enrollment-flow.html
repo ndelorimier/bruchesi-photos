@@ -1,0 +1,51 @@
+<h2>Comment enrôle-t-on un enfant dans la reconnaissance faciale ?</h2>
+<p class="subtitle">La photo de référence détermine la précision du matching pour tout l'été</p>
+
+<div class="options">
+
+  <div class="option" data-choice="parent" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Parent soumet la photo à l'inscription</h3>
+      <p>Lors de la création de compte, le parent uploade une photo récente de son enfant (selfie clair, visage centré). C'est le portrait de référence.</p>
+      <div style="background:#111;border-radius:8px;padding:10px;margin:10px 0;font-size:12px;font-family:monospace;color:#aaa;">
+        Parent s'inscrit → upload photo enfant → validée par l'employé → enrôlement CompreFace
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pour</h4><ul><li>Prêt avant l'arrivée au camp</li><li>Parent choisit la meilleure photo</li><li>Moins de travail au check-in</li></ul></div>
+        <div class="cons"><h4>Contre</h4><ul><li>Photo potentiellement ancienne ou floue</li><li>Pas de validation en personne</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="station" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Selfie Station au camp (check-in jour 1)</h3>
+      <p>L'employé prend une photo de l'enfant à son arrivée avec une tablette/iPad dédiée. Photo standardisée, éclairage contrôlé.</p>
+      <div style="background:#111;border-radius:8px;padding:10px;margin:10px 0;font-size:12px;font-family:monospace;color:#aaa;">
+        Enfant arrive → employé ouvre l'app → prend photo → lie au profil → enrôlement
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pour</h4><ul><li>Photo récente et de qualité</li><li>Employé valide l'identité en personne</li><li>Meilleure précision du modèle</li></ul></div>
+        <div class="cons"><h4>Contre</h4><ul><li>Goulot d'étranglement au check-in</li><li>100 enfants à photographier le lundi matin</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="both" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Les deux — photo parent + confirmation selfie station</h3>
+      <p>Le parent uploade une photo à l'avance. L'employé confirme/complète avec une photo fraîche à l'arrivée. CompreFace fusionne les deux pour un meilleur profil.</p>
+      <div style="background:#111;border-radius:8px;padding:10px;margin:10px 0;font-size:12px;font-family:monospace;color:#aaa;">
+        [Avant camp] parent upload → [Jour 1] selfie station → profil enrichi → enrôlement
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pour</h4><ul><li>Meilleure précision (2 angles/âges)</li><li>Check-in rapide (déjà pré-enrôlé)</li><li>Fallback si parent oublie</li></ul></div>
+        <div class="cons"><h4>Contre</h4><ul><li>Plus complexe à gérer côté admin</li><li>Dois gérer l'état "pré-enrôlé" vs "confirmé"</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>

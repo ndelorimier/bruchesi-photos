@@ -1,0 +1,84 @@
+<h2>Design — Section 2 : Modèle de données</h2>
+<p class="subtitle">10 tables PostgreSQL — structurées autour des campeurs, photos et parents</p>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+
+  <div style="background:#161b22;border-radius:8px;padding:12px;border-left:3px solid #3fb950;">
+    <div class="label" style="color:#3fb950;">Gestion du camp</div>
+    <div style="margin-top:8px;font-family:monospace;font-size:11px;line-height:2;color:#e6edf3;">
+      <b style="color:#3fb950;">semaines</b><br>
+      &nbsp;id, nom, date_debut, date_fin<br><br>
+      <b style="color:#3fb950;">campeurs</b><br>
+      &nbsp;id, prenom, nom<br>
+      &nbsp;semaine_id → semaines<br>
+      &nbsp;compreface_subject_id<br>
+      &nbsp;statut: aucun|partiel|confirmé<br><br>
+      <b style="color:#3fb950;">parents</b><br>
+      &nbsp;id, email, prenom, nom<br>
+      &nbsp;campeur_id → campeurs<br>
+      &nbsp;compte_actif (bool)<br><br>
+      <b style="color:#3fb950;">employes</b><br>
+      &nbsp;id, email, prenom, nom<br>
+      &nbsp;role: photographe|approbateur|admin
+    </div>
+  </div>
+
+  <div style="background:#161b22;border-radius:8px;padding:12px;border-left:3px solid #ffa657;">
+    <div class="label" style="color:#ffa657;">Photos & Reconnaissance</div>
+    <div style="margin-top:8px;font-family:monospace;font-size:11px;line-height:2;color:#e6edf3;">
+      <b style="color:#ffa657;">photos</b><br>
+      &nbsp;id, fichier_path, thumbnail_path<br>
+      &nbsp;uploaded_by → employes<br>
+      &nbsp;uploaded_at<br>
+      &nbsp;statut: pending|approved|rejected<br>
+      &nbsp;approuve_par → employes<br><br>
+      <b style="color:#ffa657;">photo_tags</b><br>
+      &nbsp;photo_id → photos<br>
+      &nbsp;campeur_id → campeurs<br>
+      &nbsp;confidence (0.0–1.0)<br>
+      &nbsp;confirme_par_humain (bool)<br><br>
+      <b style="color:#ffa657;">face_profiles</b><br>
+      &nbsp;campeur_id → campeurs<br>
+      &nbsp;type: parent_submit|selfie_station<br>
+      &nbsp;fichier_path, enregistre_at
+    </div>
+  </div>
+
+  <div style="background:#161b22;border-radius:8px;padding:12px;border-left:3px solid #58a6ff;">
+    <div class="label" style="color:#58a6ff;">Auth & Notifications</div>
+    <div style="margin-top:8px;font-family:monospace;font-size:11px;line-height:2;color:#e6edf3;">
+      <b style="color:#58a6ff;">magic_links</b><br>
+      &nbsp;token (UUID), parent_id → parents<br>
+      &nbsp;expires_at, used_at<br><br>
+      <b style="color:#58a6ff;">push_subscriptions</b><br>
+      &nbsp;parent_id → parents<br>
+      &nbsp;endpoint, p256dh, auth<br>
+      &nbsp;(données Web Push VAPID)<br><br>
+      <b style="color:#58a6ff;">notifications</b><br>
+      &nbsp;parent_id → parents<br>
+      &nbsp;photo_id → photos<br>
+      &nbsp;type: new_photo<br>
+      &nbsp;sent_at
+    </div>
+  </div>
+
+  <div style="background:#161b22;border-radius:8px;padding:12px;border-left:3px solid #d2a8ff;">
+    <div class="label" style="color:#d2a8ff;">Import CSV</div>
+    <div style="margin-top:8px;font-size:12px;color:#aaa;line-height:1.8;">
+      Format attendu :<br>
+      <code style="background:#0d1117;padding:4px 8px;border-radius:4px;font-size:11px;display:block;margin-top:6px;">
+        prenom_enfant, nom_enfant, semaine,<br>
+        prenom_parent, email_parent
+      </code>
+      <br>
+      Un enfant peut avoir 2 parents (2 lignes).<br>
+      Import idempotent — re-importer ne duplique pas.
+    </div>
+  </div>
+
+</div>
+
+<div style="padding:12px;background:#0d1117;border-left:3px solid #555;border-radius:4px;font-size:12px;color:#aaa;line-height:1.8;">
+  <b style="color:#e6edf3;">Flux photo complet :</b><br>
+  Upload → <span style="color:#ffa657;">photos.statut = pending</span> → CompreFace détecte → <span style="color:#ffa657;">photo_tags</span> créés → approbateur valide → <span style="color:#ffa657;">statut = approved</span> → <span style="color:#58a6ff;">notifications</span> envoyées aux parents des campeurs tagués
+</div>

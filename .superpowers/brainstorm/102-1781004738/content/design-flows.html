@@ -1,0 +1,90 @@
+<h2>Design — Section 3 : Flux principaux</h2>
+<p class="subtitle">3 parcours critiques de l'app</p>
+
+<!-- Flow 1 -->
+<div class="section">
+  <h3>① Enrôlement d'un campeur (avant + jour 1)</h3>
+  <div style="background:#0d1117;border-radius:8px;padding:16px;font-family:monospace;font-size:12px;line-height:2.2;color:#e6edf3;">
+
+    <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center;">
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;">ADMIN</span>
+      <span>📥 Import CSV campeurs/parents → comptes créés</span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;"></span>
+      <span style="color:#58a6ff;">→ Email magic link envoyé à chaque parent</span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;">PARENT</span>
+      <span>📧 Clique le lien → connecté → upload photo de son enfant</span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;">ADMIN</span>
+      <span>✅ Valide la photo dans le panel → <span style="color:#ffa657;">statut: partiel</span></span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;"></span>
+      <span style="color:#58a6ff;">→ CompreFace : sujet créé + 1ère photo de référence ajoutée</span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;">EMPLOYÉ (Jour 1)</span>
+      <span>📸 Selfie Station : trouve l'enfant par nom → prend photo</span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;"></span>
+      <span style="color:#58a6ff;">→ CompreFace : 2ème photo de référence ajoutée → <span style="color:#3fb950;">statut: confirmé</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- Flow 2 -->
+<div class="section">
+  <h3>② Upload photo → Approbation → Tags</h3>
+  <div style="background:#0d1117;border-radius:8px;padding:16px;font-family:monospace;font-size:12px;line-height:2.2;color:#e6edf3;">
+
+    <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center;">
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;">EMPLOYÉ</span>
+      <span>📤 Upload 1–50 photos (batch ou mobile) → <span style="color:#ffa657;">statut: pending</span></span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;">SYSTÈME</span>
+      <span style="color:#58a6ff;">→ Queue async : CompreFace analyse chaque photo</span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;"></span>
+      <span style="color:#58a6ff;">→ photo_tags créés (campeur_id + confidence)</span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;">APPROBATEUR</span>
+      <span>👁 Voit les photos pending avec tags proposés (noms + %)</span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;"></span>
+      <span>Peut corriger les tags, ajouter des oublis, retirer des erreurs</span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;"></span>
+      <span>✅ Approuve (ou ❌ rejette) → <span style="color:#3fb950;">statut: approved</span></span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;">SYSTÈME</span>
+      <span style="color:#58a6ff;">→ Photo visible dans l'album des semaines concernées</span>
+    </div>
+  </div>
+</div>
+
+<!-- Flow 3 -->
+<div class="section">
+  <h3>③ Notification et accès parent</h3>
+  <div style="background:#0d1117;border-radius:8px;padding:16px;font-family:monospace;font-size:12px;line-height:2.2;color:#e6edf3;">
+
+    <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center;">
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;">SYSTÈME</span>
+      <span style="color:#58a6ff;">→ Pour chaque photo approuvée : trouver les parents des campeurs tagués</span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;"></span>
+      <span style="color:#58a6ff;">→ Push notification Web Push (VAPID) : <span style="color:#e6edf3;">"📸 Nouvelle photo de Théo !"</span></span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;">PARENT</span>
+      <span>📱 Reçoit la notif → ouvre l'app (magic link ou déjà connecté)</span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;"></span>
+      <span>Voit <b>uniquement</b> les photos de la semaine de son enfant</span>
+
+      <span style="color:#555;font-size:10px;text-align:right;padding-right:8px;"></span>
+      <span>Peut télécharger les photos individuellement ou en ZIP</span>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:4px;padding:12px;background:#111;border-left:3px solid #ffa657;border-radius:4px;font-size:12px;color:#aaa;">
+  <b style="color:#ffa657;">Note sécurité :</b> Un parent ne peut jamais accéder à des photos de semaines auxquelles son enfant n'est pas inscrit — le filtre est appliqué côté API, pas seulement côté frontend.
+</div>

@@ -1,0 +1,77 @@
+<h2>Design — Section 1 : Architecture système</h2>
+<p class="subtitle">5 services Docker Compose sur le DS1520+, un seul domaine HTTPS</p>
+
+<div class="mockup">
+  <div class="mockup-header">Vue d'ensemble — docker-compose.yml</div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px;">
+
+      <!-- Left: Internet/clients -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="background:#1a2a1a;border:1px solid #3fb950;border-radius:8px;padding:12px;text-align:center;">
+          <div style="color:#3fb950;font-weight:bold;margin-bottom:6px;">📱 Parents (PWA)</div>
+          <div style="font-size:11px;color:#aaa;">Installation écran d'accueil<br>Notifications push<br>Accès photos semaine inscrite</div>
+        </div>
+        <div style="background:#1a1a2a;border:1px solid #58a6ff;border-radius:8px;padding:12px;text-align:center;">
+          <div style="color:#58a6ff;font-weight:bold;margin-bottom:6px;">💻 Employés / Admin (PWA)</div>
+          <div style="font-size:11px;color:#aaa;">Upload photos<br>Approbation<br>Selfie Station<br>Gestion campeurs</div>
+        </div>
+        <div style="text-align:center;font-size:20px;color:#555;">↕ HTTPS</div>
+        <div style="background:#2a1a1a;border:1px solid #f78166;border-radius:8px;padding:12px;text-align:center;">
+          <div style="color:#f78166;font-weight:bold;margin-bottom:6px;">🌐 nginx</div>
+          <div style="font-size:11px;color:#aaa;">Reverse proxy<br>SSL (Let's Encrypt)<br>Sert le PWA (static)</div>
+        </div>
+      </div>
+
+      <!-- Right: NAS services -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="background:#1a1a1a;border:1px solid #ffa657;border-radius:8px;padding:12px;text-align:center;">
+          <div style="color:#ffa657;font-weight:bold;margin-bottom:6px;">⚙️ app (Node.js/Express)</div>
+          <div style="font-size:11px;color:#aaa;">API REST<br>Magic links + JWT<br>Queue traitement photos<br>Push notifications (VAPID)<br>Email (Brevo SMTP)</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:#1a1a2a;border:1px solid #d2a8ff;border-radius:8px;padding:10px;text-align:center;">
+            <div style="color:#d2a8ff;font-weight:bold;margin-bottom:4px;">🗄️ postgres</div>
+            <div style="font-size:10px;color:#aaa;">Campeurs, parents<br>semaines, photos<br>approbations, notifs</div>
+          </div>
+          <div style="background:#2a1a1a;border:1px solid #ffa657;border-radius:8px;padding:10px;text-align:center;">
+            <div style="color:#ffa657;font-weight:bold;margin-bottom:4px;">🧠 compreface</div>
+            <div style="font-size:10px;color:#aaa;">Reconnaissance faciale<br>1 sujet/campeur<br>API REST interne</div>
+          </div>
+        </div>
+        <div style="background:#111;border:1px solid #555;border-radius:8px;padding:10px;text-align:center;">
+          <div style="color:#aaa;font-weight:bold;margin-bottom:4px;">📁 Volume NAS</div>
+          <div style="font-size:10px;color:#777;">/photos/pending/<br>/photos/approved/<br>/photos/profiles/</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;">
+  <h3>Stack technique</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
+    <div style="background:#161b22;border-radius:6px;padding:10px;">
+      <div class="label">Backend</div>
+      <div style="font-size:12px;color:#e6edf3;margin-top:4px;">Node.js + Express<br>Prisma ORM<br>web-push (VAPID)<br>Nodemailer + Brevo</div>
+    </div>
+    <div style="background:#161b22;border-radius:6px;padding:10px;">
+      <div class="label">Frontend PWA</div>
+      <div style="font-size:12px;color:#e6edf3;margin-top:4px;">Vue.js 3 + Vite<br>vite-plugin-pwa<br>Service Worker<br>Tailwind CSS</div>
+    </div>
+    <div style="background:#161b22;border-radius:6px;padding:10px;">
+      <div class="label">Infrastructure</div>
+      <div style="font-size:12px;color:#e6edf3;margin-top:4px;">Docker Compose<br>PostgreSQL 15<br>CompreFace 1.x<br>Nginx + certbot</div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:20px;padding:14px;background:#111;border-left:3px solid #3fb950;border-radius:4px;">
+  <div style="color:#3fb950;font-weight:bold;margin-bottom:6px;">Accès réseau</div>
+  <div style="font-size:12px;color:#aaa;line-height:1.8;">
+    • NAS exposé sur internet via DDNS Synology ou nom de domaine dédié (ex: <code>photos.bruchesi.com</code>)<br>
+    • Port 443 ouvert sur le routeur → nginx → app interne<br>
+    • CompreFace et Postgres : réseau Docker interne uniquement (non exposés)
+  </div>
+</div>

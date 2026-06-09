@@ -1,0 +1,69 @@
+<h2>Architecture globale — 3 approches</h2>
+<p class="subtitle">Comment déployer les composants sur le DS1520+</p>
+
+<div class="options">
+
+  <div class="option" data-choice="compose" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Full Docker Compose sur NAS ⭐ Recommandé</h3>
+      <p>Tout tourne dans des containers Docker orchestrés par un seul fichier <code>docker-compose.yml</code>. Un seul commande pour démarrer, redémarrer, mettre à jour.</p>
+      <div style="background:#0d1117;border-radius:8px;padding:14px;margin:10px 0;font-family:monospace;font-size:11px;line-height:1.8;color:#e6edf3;">
+        <div style="color:#58a6ff;">┌─────────────── NAS DS1520+ ───────────────┐</div>
+        <div>│  <span style="color:#3fb950;">nginx</span>  ←  HTTPS + reverse proxy           │</div>
+        <div>│     ↓                                     │</div>
+        <div>│  <span style="color:#f78166;">app</span>    ←  Node.js API + Vue PWA            │</div>
+        <div>│     ↓              ↓                      │</div>
+        <div>│  <span style="color:#d2a8ff;">postgres</span>    <span style="color:#ffa657;">compreface</span>  (reconnaissance)  │</div>
+        <div>│     ↓                                     │</div>
+        <div>│  <span style="color:#79c0ff;">📁 /photos</span>  (dossier NAS natif)            │</div>
+        <div style="color:#58a6ff;">└───────────────────────────────────────────┘</div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pour</h4><ul><li>Stack familière (Node.js)</li><li>Portable et sauvegardable</li><li>Isolation propre des services</li><li>Mise à jour sans downtime</li></ul></div>
+        <div class="cons"><h4>Contre</h4><ul><li>Demande Container Manager actif</li><li>Légèrement plus RAM (~1.5 GB total)</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="synology" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Synology Photos + App légère par-dessus</h3>
+      <p>Utilise Synology Photos comme couche de stockage. L'app Node.js se branche sur l'API Synology pour gérer les albums. Moins de containers.</p>
+      <div style="background:#0d1117;border-radius:8px;padding:14px;margin:10px 0;font-family:monospace;font-size:11px;line-height:1.8;color:#e6edf3;">
+        <div style="color:#58a6ff;">┌─────────────── NAS DS1520+ ───────────────┐</div>
+        <div>│  <span style="color:#3fb950;">Synology Photos</span>  (albums, accès)         │</div>
+        <div>│     ↓                                     │</div>
+        <div>│  <span style="color:#f78166;">app</span>  ←  Node.js (thin layer)              │</div>
+        <div>│     ↓              ↓                      │</div>
+        <div>│  <span style="color:#d2a8ff;">sqlite</span>      <span style="color:#ffa657;">compreface</span>  (Docker)           │</div>
+        <div style="color:#58a6ff;">└───────────────────────────────────────────┘</div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pour</h4><ul><li>Moins de RAM (pas de Postgres)</li><li>Interface DSM pour gestion manuelle</li></ul></div>
+        <div class="cons"><h4>Contre</h4><ul><li>API Synology Photos peu documentée</li><li>Couplé à Synology — difficile à migrer</li><li>Workflow approbation plus complexe à greffer</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>NAS photos + Backend Railway (cloud léger)</h3>
+      <p>Les photos restent sur le NAS. L'API Node.js, la DB et les notifications tournent sur Railway. CompreFace seul sur le NAS.</p>
+      <div style="background:#0d1117;border-radius:8px;padding:14px;margin:10px 0;font-family:monospace;font-size:11px;line-height:1.8;color:#e6edf3;">
+        <div style="color:#58a6ff;">┌─── Railway ───┐    ┌─── NAS ─────────┐</div>
+        <div>│ <span style="color:#f78166;">Node.js API</span>   │ ←→ │ <span style="color:#ffa657;">CompreFace</span>      │</div>
+        <div>│ <span style="color:#d2a8ff;">PostgreSQL</span>    │    │ <span style="color:#79c0ff;">📁 /photos</span>      │</div>
+        <div>│ <span style="color:#3fb950;">Push notifs</span>   │    │ (tunnel ngrok?) │</div>
+        <div style="color:#58a6ff;">└───────────────┘    └─────────────────┘</div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pour</h4><ul><li>Notifs/email fiables (Railway toujours dispo)</li><li>NAS hors-ligne = app partielle mais pas morte</li></ul></div>
+        <div class="cons"><h4>Contre</h4><ul><li>Tunnel réseau NAS ↔ Railway complexe</li><li>Coût Railway supplémentaire</li><li>Photos quittent potentiellement le camp</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>
