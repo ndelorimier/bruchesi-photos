@@ -113,4 +113,33 @@ router.post('/:id/reject', ...approuvateurOnly, async (req, res) => {
   }
 });
 
+// GET /api/photos/file/:id/thumb — sert la miniature
+router.get('/file/:id/thumb', requireAuth, async (req, res) => {
+  try {
+    const photo = await prisma.photo.findUnique({ where: { id: Number(req.params.id) } });
+    if (!photo || !photo.thumbnailPath) return res.status(404).end();
+    res.sendFile(photo.thumbnailPath);
+  } catch (err) {
+    res.status(500).end();
+  }
+});
+
+// GET /api/photos/file/:id — sert l'originale (parents approuvés seulement)
+router.get('/file/:id', requireAuth, async (req, res) => {
+  try {
+    const photo = await prisma.photo.findUnique({
+      where: { id: Number(req.params.id) },
+      include: { tags: { include: { campeur: { include: { parents: true } } } } },
+    });
+    if (!photo || photo.statut !== 'APPROVED') return res.status(404).end();
+    if (req.user.type === 'parent') {
+      const allowed = photo.tags.some(t => t.campeur.parents.some(p => p.id === req.user.id));
+      if (!allowed) return res.status(403).end();
+    }
+    res.sendFile(photo.fichierPath);
+  } catch (err) {
+    res.status(500).end();
+  }
+});
+
 module.exports = router;
