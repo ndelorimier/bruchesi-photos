@@ -32,6 +32,8 @@ async function shutdown() {
 process.on('SIGTERM', shutdown);
 process.on('SIGINT',  shutdown);
 
-start().catch(err => { console.error(err); process.exit(1); });
+if (process.env.NODE_ENV !== 'test') {
+  start().catch(err => { console.error(err); process.exit(1); });
+}
 
 module.exports = { app, prisma };
