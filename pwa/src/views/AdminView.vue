@@ -32,10 +32,39 @@
     <!-- Semaines -->
     <div class="bg-gray-900 rounded-xl p-4 space-y-3">
       <h2 class="font-semibold">Créer une semaine</h2>
-      <input v-model="newSemaine.nom" placeholder="Nom (ex: Semaine 1)" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
-      <input v-model="newSemaine.dateDebut" type="date" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
-      <input v-model="newSemaine.dateFin" type="date" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
-      <button @click="createSemaine" class="w-full bg-blue-700 hover:bg-blue-600 rounded-lg py-2 text-sm font-semibold">Créer la semaine</button>
+      <input
+        v-model="newSemaine.nom"
+        placeholder="Nom (ex: Semaine 1)"
+        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"
+      />
+
+      <!-- Calendrier range picker -->
+      <VueDatePicker
+        v-model="dateRange"
+        range
+        :enable-time-picker="false"
+        locale="fr"
+        dark
+        :format="formatDisplay"
+        placeholder="Sélectionner les dates de début et fin"
+        auto-apply
+        :teleport="true"
+      />
+
+      <!-- Résumé de la sélection -->
+      <p v-if="dateRange && dateRange[0] && dateRange[1]" class="text-xs text-blue-300 text-center">
+        📅 {{ fmt(dateRange[0]) }} → {{ fmt(dateRange[1]) }}
+        ({{ nbJours }} jour{{ nbJours > 1 ? 's' : '' }})
+      </p>
+
+      <button
+        @click="createSemaine"
+        :disabled="!newSemaine.nom || !dateRange || !dateRange[1]"
+        class="w-full bg-blue-700 hover:bg-blue-600 disabled:opacity-40 rounded-lg py-2 text-sm font-semibold"
+      >
+        Créer la semaine
+      </button>
+      <p v-if="semaineMsg" class="text-green-400 text-sm text-center">{{ semaineMsg }}</p>
     </div>
 
     <!-- Changer mot de passe -->
@@ -59,17 +88,43 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
+import { VueDatePicker } from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
 
 const dashboard = ref(null);
 const csvResult = ref('');
-const newSemaine = ref({ nom: '', dateDebut: '', dateFin: '' });
+const newSemaine = ref({ nom: '' });
+const dateRange = ref(null);
+const semaineMsg = ref('');
 const pwd = ref({ current: '', next: '', confirm: '' });
 const pwdMsg = ref(null);
 
 onMounted(async () => {
   dashboard.value = (await axios.get('/api/admin/dashboard')).data;
+});
+
+// Affichage court dans le champ (ex: "24 juin → 30 juin 2026")
+function formatDisplay(dates) {
+  if (!dates || !dates[0]) return '';
+  const opts = { day: 'numeric', month: 'long' };
+  const start = new Date(dates[0]).toLocaleDateString('fr-CA', opts);
+  if (!dates[1]) return start;
+  const end = new Date(dates[1]).toLocaleDateString('fr-CA', { ...opts, year: 'numeric' });
+  return `${start} → ${end}`;
+}
+
+// Affichage lisible d'une date
+function fmt(d) {
+  return new Date(d).toLocaleDateString('fr-CA', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+// Nombre de jours dans la plage
+const nbJours = computed(() => {
+  if (!dateRange.value?.[0] || !dateRange.value?.[1]) return 0;
+  const diff = new Date(dateRange.value[1]) - new Date(dateRange.value[0]);
+  return Math.round(diff / 86_400_000) + 1;
 });
 
 async function importCsv(e) {
@@ -80,8 +135,16 @@ async function importCsv(e) {
 }
 
 async function createSemaine() {
-  await axios.post('/api/admin/semaines', newSemaine.value);
-  newSemaine.value = { nom: '', dateDebut: '', dateFin: '' };
+  semaineMsg.value = '';
+  const [start, end] = dateRange.value;
+  await axios.post('/api/admin/semaines', {
+    nom: newSemaine.value.nom,
+    dateDebut: new Date(start).toISOString(),
+    dateFin: new Date(end).toISOString(),
+  });
+  semaineMsg.value = `✓ Semaine "${newSemaine.value.nom}" créée.`;
+  newSemaine.value = { nom: '' };
+  dateRange.value = null;
   dashboard.value = (await axios.get('/api/admin/dashboard')).data;
 }
 
