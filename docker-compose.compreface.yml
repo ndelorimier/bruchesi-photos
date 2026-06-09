@@ -1,0 +1,103 @@
+# CompreFace — stack officielle multi-conteneurs
+# Démarrer AVANT docker-compose.yml :
+#   docker-compose -f docker-compose.compreface.yml up -d
+#
+# Après démarrage (2-3 min) :
+#   1. Ouvrir http://192.168.1.178:8000 (admin UI)
+#   2. Créer un compte → créer un service "Reconnaissance"
+#   3. Copier l'API key dans .env → COMPREFACE_API_KEY=xxx
+#   4. Redémarrer le service app : docker-compose restart app
+
+version: '3.9'
+
+networks:
+  bruchesi-net:
+    external: true
+
+services:
+  compreface-db:
+    image: postgres:11.5-alpine
+    restart: unless-stopped
+    networks:
+      - bruchesi-net
+    environment:
+      POSTGRES_USER: compreface
+      POSTGRES_PASSWORD: compreface
+      POSTGRES_DB: facerecognition
+    volumes:
+      - cf_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U compreface"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  compreface-core:
+    image: exadel/compreface-core:latest
+    restart: unless-stopped
+    networks:
+      - bruchesi-net
+    environment:
+      ML_PORT: 3000
+    healthcheck:
+      test: curl --fail http://localhost:3000/status || exit 1
+      interval: 30s
+      timeout: 15s
+      retries: 12
+      start_period: 60s
+
+  compreface-api:
+    image: exadel/compreface-api:latest
+    restart: unless-stopped
+    networks:
+      - bruchesi-net
+    environment:
+      POSTGRES_USER: compreface
+      POSTGRES_PASSWORD: compreface
+      POSTGRES_URL: jdbc:postgresql://compreface-db:5432/facerecognition
+      SPRING_PROFILES_ACTIVE: dev
+      ENABLE_EMAIL_SERVER: "false"
+      SAVE_IMAGES_TO_DB: "true"
+      MAX_FILE_SIZE: 10MB
+      MAX_REQUEST_SIZE: 20MB
+    depends_on:
+      compreface-db:
+        condition: service_healthy
+      compreface-core:
+        condition: service_healthy
+
+  compreface-admin:
+    image: exadel/compreface-admin:latest
+    restart: unless-stopped
+    networks:
+      - bruchesi-net
+    environment:
+      POSTGRES_USER: compreface
+      POSTGRES_PASSWORD: compreface
+      POSTGRES_URL: jdbc:postgresql://compreface-db:5432/facerecognition
+      SPRING_PROFILES_ACTIVE: dev
+      ENABLE_EMAIL_SERVER: "false"
+    depends_on:
+      compreface-db:
+        condition: service_healthy
+      compreface-core:
+        condition: service_healthy
+
+  # Proxy : expose l'API CompreFace sur le port 8000
+  # → dans .env : COMPREFACE_URL=http://compreface:8000
+  # Le service "app" le résout via le réseau bruchesi-net
+  compreface:
+    image: nginx:alpine
+    restart: unless-stopped
+    networks:
+      - bruchesi-net
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx/compreface-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - compreface-api
+      - compreface-admin
+
+volumes:
+  cf_pg_data:
