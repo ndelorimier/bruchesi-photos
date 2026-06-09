@@ -17,7 +17,50 @@ const router = createRouter({ history: createWebHistory(), routes });
 
 router.beforeEach((to) => {
   const auth = useAuthStore();
-  if (!to.meta.public && !auth.token) return '/login';
+  const user = auth.user;
+
+  // Page publique — toujours OK
+  if (to.meta.public) return true;
+
+  // Non connecté → login
+  if (!auth.token || !user) return '/login';
+
+  // Déjà connecté et va sur /login → rediriger vers le bon endroit
+  if (to.path === '/login') return roleHome(user);
+
+  const required = to.meta.role;
+
+  // Route admin : doit être employé avec rôle ADMIN
+  if (required === 'admin') {
+    if (user.type === 'employe' && user.role === 'ADMIN') return true;
+    return roleHome(user);
+  }
+
+  // Route employé : doit être un employé (tout rôle)
+  if (required === 'employe') {
+    if (user.type === 'employe') return true;
+    return roleHome(user);
+  }
+
+  // Route parent : doit être un parent
+  if (required === 'parent') {
+    if (user.type === 'parent') return true;
+    return roleHome(user);
+  }
+
+  return true;
 });
+
+/** Renvoie la page d'accueil selon le profil connecté */
+function roleHome(user) {
+  if (!user) return '/login';
+  if (user.type === 'parent') return '/';
+  if (user.type === 'employe') {
+    if (user.role === 'ADMIN') return '/admin';
+    if (user.role === 'APPROBATEUR') return '/approbation';
+    return '/upload';
+  }
+  return '/login';
+}
 
 export default router;
