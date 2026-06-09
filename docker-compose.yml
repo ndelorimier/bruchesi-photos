@@ -9,7 +9,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
-      - pwa_dist:/usr/share/nginx/html:ro
+      - ./pwa_dist:/usr/share/nginx/html:ro
     depends_on:
       - app
     restart: unless-stopped
@@ -70,4 +70,3 @@ volumes:
   pg_data:
   cf_data:
   photos_data:
-  pwa_dist:

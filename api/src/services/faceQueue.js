@@ -37,7 +37,7 @@ function startWorker() {
     if (running) return;
     running = true;
     try {
-      const photo = await prisma.photo.findFirst({ where: { statut: 'PENDING' }, orderBy: { uploadedAt: 'asc' } });
+      const photo = await prisma.photo.findFirst({ where: { statut: 'PENDING', tags: { none: {} } }, orderBy: { uploadedAt: 'asc' } });
       if (photo) await processPhoto(photo, prisma);
     } catch (err) {
       console.error('[faceQueue] Erreur:', err.message);

@@ -49,6 +49,16 @@ onMounted(async () => {
 });
 
 async function downloadZip() {
-  window.location.href = '/api/parents/photos/download';
+  try {
+    const res = await axios.get('/api/parents/photos/download', { responseType: 'blob' });
+    const url = URL.createObjectURL(res.data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bruchesi-photos.zip';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    alert('Erreur lors du téléchargement.');
+  }
 }
 </script>
