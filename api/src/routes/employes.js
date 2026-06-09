@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { requireAuth } = require('../middleware/auth');
 
 const prisma = new PrismaClient();
 
@@ -26,6 +27,31 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error('employes/login error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// PUT /api/employes/password  { currentPassword, newPassword }
+router.put('/password', requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Mot de passe actuel et nouveau requis' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Nouveau mot de passe : 8 caractères minimum' });
+    }
+    const employe = await prisma.employe.findUnique({ where: { id: req.user.id } });
+    if (!employe) return res.status(404).json({ error: 'Employé introuvable' });
+
+    const valid = await bcrypt.compare(currentPassword, employe.passwordHash);
+    if (!valid) return res.status(401).json({ error: 'Mot de passe actuel incorrect' });
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await prisma.employe.update({ where: { id: employe.id }, data: { passwordHash } });
+    return res.json({ message: 'Mot de passe mis à jour.' });
+  } catch (err) {
+    console.error('employes/password error:', err);
+    return res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 

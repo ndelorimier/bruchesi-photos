@@ -37,6 +37,24 @@
       <input v-model="newSemaine.dateFin" type="date" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
       <button @click="createSemaine" class="w-full bg-blue-700 hover:bg-blue-600 rounded-lg py-2 text-sm font-semibold">Créer la semaine</button>
     </div>
+
+    <!-- Changer mot de passe -->
+    <div class="bg-gray-900 rounded-xl p-4 space-y-3">
+      <h2 class="font-semibold">🔑 Changer mon mot de passe</h2>
+      <input v-model="pwd.current" type="password" placeholder="Mot de passe actuel"
+        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+      <input v-model="pwd.next" type="password" placeholder="Nouveau mot de passe (8 car. min.)"
+        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+      <input v-model="pwd.confirm" type="password" placeholder="Confirmer le nouveau mot de passe"
+        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+      <button @click="changePassword"
+        class="w-full bg-indigo-700 hover:bg-indigo-600 rounded-lg py-2 text-sm font-semibold">
+        Mettre à jour
+      </button>
+      <p v-if="pwdMsg" :class="pwdMsg.ok ? 'text-green-400' : 'text-red-400'" class="text-sm text-center">
+        {{ pwdMsg.text }}
+      </p>
+    </div>
   </div>
 </template>
 
@@ -47,6 +65,8 @@ import axios from 'axios';
 const dashboard = ref(null);
 const csvResult = ref('');
 const newSemaine = ref({ nom: '', dateDebut: '', dateFin: '' });
+const pwd = ref({ current: '', next: '', confirm: '' });
+const pwdMsg = ref(null);
 
 onMounted(async () => {
   dashboard.value = (await axios.get('/api/admin/dashboard')).data;
@@ -63,5 +83,23 @@ async function createSemaine() {
   await axios.post('/api/admin/semaines', newSemaine.value);
   newSemaine.value = { nom: '', dateDebut: '', dateFin: '' };
   dashboard.value = (await axios.get('/api/admin/dashboard')).data;
+}
+
+async function changePassword() {
+  pwdMsg.value = null;
+  if (pwd.value.next !== pwd.value.confirm) {
+    pwdMsg.value = { ok: false, text: 'Les nouveaux mots de passe ne correspondent pas.' };
+    return;
+  }
+  try {
+    await axios.put('/api/employes/password', {
+      currentPassword: pwd.value.current,
+      newPassword: pwd.value.next,
+    });
+    pwdMsg.value = { ok: true, text: '✓ Mot de passe mis à jour.' };
+    pwd.value = { current: '', next: '', confirm: '' };
+  } catch (err) {
+    pwdMsg.value = { ok: false, text: err.response?.data?.error || 'Erreur lors de la mise à jour.' };
+  }
 }
 </script>
