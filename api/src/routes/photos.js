@@ -16,7 +16,7 @@ router.post('/upload', ...staffOnly, upload.array('photos', 50), async (req, res
   try {
     const created = [];
     for (const file of req.files) {
-      const thumbDir = path.join(process.env.PHOTOS_PATH, 'thumbs');
+      const thumbDir = path.join(process.env.PHOTOS_PATH || '/data/photos', 'thumbs');
       fs.mkdirSync(thumbDir, { recursive: true });
       const thumbPath = path.join(thumbDir, file.filename);
       await sharp(file.path).resize(400, 400, { fit: 'cover' }).toFile(thumbPath);

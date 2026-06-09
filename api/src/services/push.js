@@ -15,7 +15,7 @@ async function sendToParents(parentIds, payload) {
   const unique = Object.values(
     Object.fromEntries(subs.map(s => [s.endpoint, s]))
   );
-  await Promise.allSettled(
+  const results = await Promise.allSettled(
     unique.map(sub =>
       webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
@@ -23,6 +23,8 @@ async function sendToParents(parentIds, payload) {
       )
     )
   );
+  const failed = results.filter(r => r.status === 'rejected').length;
+  if (failed > 0) console.warn(`[push] ${failed}/${results.length} notifications échouées`);
 }
 
 module.exports = { sendToParents };

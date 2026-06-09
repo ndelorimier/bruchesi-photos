@@ -15,6 +15,15 @@ const photoStorage = multer.diskStorage({
 
 const memoryStorage = multer.memoryStorage();
 
-module.exports = multer({ storage: photoStorage, limits: { fileSize: 20 * 1024 * 1024 } });
+const imageFilter = (req, file, cb) => {
+  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+  if (allowed.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Format non supporté. Utilisez JPG, PNG, WEBP ou HEIC.'), false);
+  }
+};
+
+module.exports = multer({ storage: photoStorage, limits: { fileSize: 20 * 1024 * 1024 }, fileFilter: imageFilter });
 module.exports.memory = multer({ storage: memoryStorage, limits: { fileSize: 5 * 1024 * 1024 } });
 module.exports.single = (field) => multer({ storage: memoryStorage }).single(field);
