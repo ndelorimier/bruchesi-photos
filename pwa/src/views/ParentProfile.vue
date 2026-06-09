@@ -22,7 +22,7 @@
         <p v-if="refSuccess" class="text-green-400 text-sm">✓ Photo soumise — en attente de validation.</p>
       </div>
 
-      <button @click="auth.logout(); $router.push('/login')" class="w-full bg-gray-800 rounded-xl py-3 text-sm text-gray-400">
+      <button @click="auth.logout(); router.push('/login')" class="w-full bg-gray-800 rounded-xl py-3 text-sm text-gray-400">
         Se déconnecter
       </button>
     </div>
@@ -36,9 +36,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
 const auth = useAuthStore();
+const router = useRouter();
 const me = ref([]);
 const refSuccess = ref(false);
 onMounted(async () => { me.value = (await axios.get('/api/parents/me')).data; });

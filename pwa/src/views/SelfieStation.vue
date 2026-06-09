@@ -76,6 +76,7 @@ async function enrollSelfie(blob) {
   try {
     await axios.post(`/api/campeurs/${campeur.value.id}/enroll-profile`, form);
     success.value = true;
+    if (!campeur.value.faceProfiles) campeur.value.faceProfiles = [];
     campeur.value.faceProfiles.push({ type: 'SELFIE_STATION' });
   } catch {
     error.value = 'Erreur lors de l\'enrôlement.';
