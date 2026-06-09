@@ -1,0 +1,7 @@
+.env
+node_modules/
+nginx/ssl/
+pwa/dist/
+api/node_modules/
+pwa/node_modules/
+*.log
