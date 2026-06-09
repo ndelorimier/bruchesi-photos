@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Semaine {
+  id         Int       @id @default(autoincrement())
+  nom        String
+  dateDebut  DateTime
+  dateFin    DateTime
+  campeurs   Campeur[]
+  createdAt  DateTime  @default(now())
+}
+
+model Campeur {
+  id                   Int           @id @default(autoincrement())
+  prenom               String
+  nom                  String
+  semaine              Semaine       @relation(fields: [semaineId], references: [id])
+  semaineId            Int
+  compreFaceSubjectId  String?
+  statut               StatutEnrolement @default(AUCUN)
+  parents              Parent[]
+  photoTags            PhotoTag[]
+  faceProfiles         FaceProfile[]
+  createdAt            DateTime      @default(now())
+}
+
+enum StatutEnrolement {
+  AUCUN
+  PARTIEL
+  CONFIRME
+}
+
+model Parent {
+  id                Int                @id @default(autoincrement())
+  email             String
+  prenom            String
+  nom               String
+  campeur           Campeur            @relation(fields: [campeurId], references: [id])
+  campeurId         Int
+  compteActif       Boolean            @default(false)
+  magicLinks        MagicLink[]
+  pushSubscriptions PushSubscription[]
+  notifications     Notification[]
+  createdAt         DateTime           @default(now())
+}
+
+model Employe {
+  id            Int        @id @default(autoincrement())
+  email         String     @unique
+  prenom        String
+  nom           String
+  passwordHash  String
+  role          RoleEmploye
+  photosUploaded Photo[]   @relation("uploader")
+  photosApproved Photo[]   @relation("approver")
+  createdAt     DateTime   @default(now())
+}
+
+enum RoleEmploye {
+  PHOTOGRAPHE
+  APPROBATEUR
+  ADMIN
+}
+
+model Photo {
+  id            Int          @id @default(autoincrement())
+  fichierPath   String
+  thumbnailPath String?
+  uploadedBy    Employe      @relation("uploader", fields: [uploadedById], references: [id])
+  uploadedById  Int
+  uploadedAt    DateTime     @default(now())
+  statut        StatutPhoto  @default(PENDING)
+  approuvePar   Employe?     @relation("approver", fields: [approuveParId], references: [id])
+  approuveParId Int?
+  approuveAt    DateTime?
+  tags          PhotoTag[]
+  notifications Notification[]
+}
+
+enum StatutPhoto {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model PhotoTag {
+  id                 Int      @id @default(autoincrement())
+  photo              Photo    @relation(fields: [photoId], references: [id])
+  photoId            Int
+  campeur            Campeur  @relation(fields: [campeurId], references: [id])
+  campeurId          Int
+  confidence         Float
+  confirmeParHumain  Boolean  @default(false)
+
+  @@unique([photoId, campeurId])
+}
+
+model FaceProfile {
+  id          Int         @id @default(autoincrement())
+  campeur     Campeur     @relation(fields: [campeurId], references: [id])
+  campeurId   Int
+  type        TypeProfile
+  fichierPath String
+  enregistreAt DateTime   @default(now())
+}
+
+enum TypeProfile {
+  PARENT_SUBMIT
+  SELFIE_STATION
+}
+
+model MagicLink {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique @default(cuid())
+  parent    Parent   @relation(fields: [parentId], references: [id])
+  parentId  Int
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model PushSubscription {
+  id        Int    @id @default(autoincrement())
+  parent    Parent @relation(fields: [parentId], references: [id])
+  parentId  Int
+  endpoint  String @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id       Int      @id @default(autoincrement())
+  parent   Parent   @relation(fields: [parentId], references: [id])
+  parentId Int
+  photo    Photo    @relation(fields: [photoId], references: [id])
+  photoId  Int
+  type     String   @default("new_photo")
+  sentAt   DateTime @default(now())
+}
