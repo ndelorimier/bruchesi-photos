@@ -1,0 +1,54 @@
+<template>
+  <div class="min-h-screen bg-gray-950 text-white">
+    <!-- Header -->
+    <div class="bg-gray-900 px-4 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="font-bold text-lg">📸 Bruchési Photos</h1>
+        <p class="text-gray-400 text-sm">{{ semaineLabel }}</p>
+      </div>
+      <button @click="downloadZip" class="text-green-400 text-sm">⬇ ZIP</button>
+    </div>
+
+    <!-- Grille photos -->
+    <div v-if="photos.length" class="p-2 grid grid-cols-3 gap-1">
+      <PhotoCard v-for="p in photos" :key="p.id" :photo="p" />
+    </div>
+    <div v-else class="flex items-center justify-center h-64 text-gray-500">
+      Aucune photo pour le moment
+    </div>
+
+    <!-- Bottom nav -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 flex">
+      <router-link to="/" class="flex-1 py-3 text-center text-xs" active-class="text-green-400">📸 Photos</router-link>
+      <router-link to="/alertes" class="flex-1 py-3 text-center text-xs" active-class="text-green-400">🔔 Alertes</router-link>
+      <router-link to="/profil" class="flex-1 py-3 text-center text-xs" active-class="text-green-400">👤 Profil</router-link>
+    </nav>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed } from 'vue';
+import axios from 'axios';
+import PhotoCard from '../components/PhotoCard.vue';
+
+const photos = ref([]);
+const me = ref([]);
+
+const semaineLabel = computed(() => {
+  const semaines = [...new Set(me.value.map(p => p.campeur?.semaine?.nom))].filter(Boolean);
+  return semaines.join(', ') || '';
+});
+
+onMounted(async () => {
+  const [photosRes, meRes] = await Promise.all([
+    axios.get('/api/parents/photos'),
+    axios.get('/api/parents/me'),
+  ]);
+  photos.value = photosRes.data;
+  me.value = meRes.data;
+});
+
+async function downloadZip() {
+  window.location.href = '/api/parents/photos/download';
+}
+</script>
