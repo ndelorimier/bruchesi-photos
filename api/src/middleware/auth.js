@@ -9,7 +9,7 @@ function requireAuth(req, res, next) {
     req.user = jwt.verify(header.slice(7), process.env.JWT_SECRET);
     next();
   } catch {
-    res.status(401).json({ error: 'Token invalide ou expiré' });
+    return res.status(401).json({ error: 'Token invalide ou expiré' });
   }
 }
 
