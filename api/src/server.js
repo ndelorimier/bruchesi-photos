@@ -1,5 +1,4 @@
 const express = require('express');
-const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
@@ -26,6 +25,13 @@ async function start() {
   app.listen(PORT, () => console.log(`API running on port ${PORT}`));
 }
 
-start().catch(console.error);
+async function shutdown() {
+  await prisma.$disconnect();
+  process.exit(0);
+}
+process.on('SIGTERM', shutdown);
+process.on('SIGINT',  shutdown);
+
+start().catch(err => { console.error(err); process.exit(1); });
 
 module.exports = { app, prisma };

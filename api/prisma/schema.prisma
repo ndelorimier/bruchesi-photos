@@ -14,6 +14,8 @@ model Semaine {
   dateFin    DateTime
   campeurs   Campeur[]
   createdAt  DateTime  @default(now())
+
+  @@index([dateDebut, dateFin])
 }
 
 model Campeur {
@@ -48,6 +50,8 @@ model Parent {
   pushSubscriptions PushSubscription[]
   notifications     Notification[]
   createdAt         DateTime           @default(now())
+
+  @@index([email])
 }
 
 model Employe {

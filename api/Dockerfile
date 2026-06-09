@@ -3,7 +3,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN ./node_modules/.bin/prisma generate
 COPY src ./src
+COPY entrypoint.sh ./
+RUN chmod +x entrypoint.sh
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && node src/server.js"]
+CMD ["./entrypoint.sh"]
