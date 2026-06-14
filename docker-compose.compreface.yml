@@ -3,7 +3,7 @@
 #   docker-compose -f docker-compose.compreface.yml up -d
 #
 # Après démarrage (2-3 min) :
-#   1. Ouvrir http://192.168.1.178:8000 (admin UI)
+#   1. Ouvrir http://<IP_DU_NAS>:8000 (admin UI)
 #   2. Créer un compte → créer un service "Reconnaissance"
 #   3. Copier l'API key dans .env → COMPREFACE_API_KEY=xxx
 #   4. Redémarrer le service app : docker-compose restart app
