@@ -1,13 +1,14 @@
 const router = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { requireAuth } = require('../middleware/auth');
+const rateLimit = require('../middleware/rateLimit');
 
-const prisma = new PrismaClient();
+const loginLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 10, message: 'Trop de tentatives de connexion. Réessayez dans 5 minutes.' });
 
 // POST /api/employes/login  { email, password }
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });

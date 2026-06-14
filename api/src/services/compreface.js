@@ -37,4 +37,25 @@ async function reconnaitre(imagePath, { limit = 5, detProbThreshold = 0.8 } = {}
   return res.data.result || [];
 }
 
-module.exports = { creerSujet, ajouterImage, reconnaitre };
+async function supprimerSujet(nom) {
+  await axios.delete(
+    `${BASE()}/api/v1/recognition/subjects/${encodeURIComponent(nom)}`,
+    { headers: { 'x-api-key': KEY() } }
+  );
+}
+
+// Vérifie que CompreFace répond — 'ok' | 'non-configure' | 'injoignable'
+async function ping() {
+  if (!KEY() || KEY().startsWith('set-after') || KEY().startsWith('change')) return 'non-configure';
+  try {
+    await axios.get(`${BASE()}/api/v1/recognition/subjects`, {
+      headers: { 'x-api-key': KEY() },
+      timeout: 3000,
+    });
+    return 'ok';
+  } catch {
+    return 'injoignable';
+  }
+}
+
+module.exports = { creerSujet, ajouterImage, reconnaitre, supprimerSujet, ping };

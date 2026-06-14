@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../db');
 const compreface = require('./compreface');
 
 const CONFIDENCE_THRESHOLD = 0.70;
@@ -32,7 +32,6 @@ async function processPhoto(photo, prisma) {
 }
 
 function startWorker() {
-  const prisma = new PrismaClient();
   setInterval(async () => {
     if (running) return;
     running = true;

@@ -1,12 +1,11 @@
 const router = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../db');
 const path = require('path');
 const fs = require('fs');
 const upload = require('../middleware/upload');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const compreface = require('../services/compreface');
 
-const prisma = new PrismaClient();
 const staffOnly = [requireAuth, requireRole('PHOTOGRAPHE', 'APPROBATEUR', 'ADMIN')];
 
 // GET /api/campeurs?semaine=:id&q=:nom

@@ -1,8 +1,7 @@
 const router = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
-const prisma = new PrismaClient();
 
 // POST /api/push/subscribe  { endpoint, keys: { p256dh, auth } }
 router.post('/subscribe', requireAuth, requireRole('parent'), async (req, res) => {

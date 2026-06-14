@@ -1,12 +1,13 @@
 const router = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../db');
 const jwt = require('jsonwebtoken');
 const { sendMagicLink } = require('../services/email');
+const rateLimit = require('../middleware/rateLimit');
 
-const prisma = new PrismaClient();
+const magicLinkLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: 'Trop de demandes de lien. Réessayez dans 15 minutes.' });
 
 // POST /api/auth/magic-link  { email }
-router.post('/magic-link', async (req, res) => {
+router.post('/magic-link', magicLinkLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email requis' });

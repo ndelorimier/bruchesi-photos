@@ -1,12 +1,11 @@
 const router = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { streamZip } = require('../services/zip');
 const upload = require('../middleware/upload');
 const path = require('path');
 const fs = require('fs');
 
-const prisma = new PrismaClient();
 const parentOnly = [requireAuth, requireRole('parent')];
 
 // GET /api/parents/me — profil et campeur(s) liés

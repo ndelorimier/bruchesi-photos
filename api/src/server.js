@@ -1,8 +1,10 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('./db');
 
-const prisma = new PrismaClient();
 const app = express();
+
+// Derrière nginx — req.ip lit X-Forwarded-For (1 saut de proxy)
+app.set('trust proxy', 1);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

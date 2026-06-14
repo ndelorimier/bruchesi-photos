@@ -10,7 +10,18 @@ const routes = [
   { path: '/approbation', component: () => import('../views/ApprovalQueue.vue'), meta: { role: 'employe' } },
   { path: '/upload', component: () => import('../views/UploadView.vue'), meta: { role: 'employe' } },
   { path: '/selfie-station', component: () => import('../views/SelfieStation.vue'), meta: { role: 'employe' } },
-  { path: '/admin', component: () => import('../views/AdminView.vue'), meta: { role: 'admin' } },
+  {
+    path: '/admin',
+    component: () => import('../views/admin/AdminLayout.vue'),
+    meta: { role: 'admin' },
+    children: [
+      { path: '', component: () => import('../views/admin/AdminDashboard.vue') },
+      { path: 'semaines', component: () => import('../views/admin/AdminSemaines.vue') },
+      { path: 'campeurs', component: () => import('../views/admin/AdminCampeurs.vue') },
+      { path: 'parents', component: () => import('../views/admin/AdminParents.vue') },
+      { path: 'equipe', component: () => import('../views/admin/AdminEquipe.vue') },
+    ],
+  },
 ];
 
 const router = createRouter({ history: createWebHistory(), routes });

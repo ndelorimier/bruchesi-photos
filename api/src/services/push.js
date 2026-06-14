@@ -1,6 +1,5 @@
 const webpush = require('web-push');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../db');
 
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL || 'mailto:admin@bruchesi.com',
