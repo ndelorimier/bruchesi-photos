@@ -5,6 +5,7 @@ const fs = require('fs');
 const sharp = require('sharp');
 const upload = require('../middleware/upload');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { ownsAny } = require('../services/parentIdentity');
 const { sendToParents } = require('../services/push');
 
 const staffOnly = [requireAuth, requireRole('PHOTOGRAPHE', 'APPROBATEUR', 'ADMIN')];
@@ -75,18 +76,23 @@ router.post('/:id/approve', ...approuvateurOnly, async (req, res) => {
       include: { tags: { include: { campeur: { include: { parents: true } } } } },
     });
 
-    // Notifications push
-    const parentIds = updated.tags.flatMap(t => t.campeur.parents.map(p => p.id));
-    if (parentIds.length) {
-      const uniqueParentIds = [...new Set(parentIds)];
+    // Notifications push — étendre par COURRIEL pour couvrir tous les enfants d'un parent
+    const taggedParents = updated.tags.flatMap(t => t.campeur.parents);
+    if (taggedParents.length) {
+      const emails = [...new Set(taggedParents.map(p => p.email))];
+      const rows = await prisma.parent.findMany({ where: { email: { in: emails } } });
+      const uniqueParentIds = [...new Set(rows.map(p => p.id))];
       const prenoms = [...new Set(updated.tags.map(t => t.campeur.prenom))];
       await sendToParents(uniqueParentIds, {
         title: 'Bruchési Photos',
         body: `📸 Nouvelle photo de ${prenoms.join(', ')} !`,
         photoId: id,
       });
+      // Une notification par courriel (ligne représentative) pour éviter les doublons
+      const repByEmail = {};
+      for (const r of rows) if (!(r.email in repByEmail)) repByEmail[r.email] = r.id;
       await prisma.notification.createMany({
-        data: uniqueParentIds.map(pId => ({ parentId: pId, photoId: id, type: 'new_photo' })),
+        data: Object.values(repByEmail).map(pId => ({ parentId: pId, photoId: id, type: 'new_photo' })),
         skipDuplicates: true,
       });
     }
@@ -113,8 +119,21 @@ router.post('/:id/reject', ...approuvateurOnly, async (req, res) => {
 });
 
 // GET /api/photos/file/:id/thumb — sert la miniature
+// Staff : toutes les miniatures (file d'approbation incluse). Parent : seulement
+// les photos APPROVED taguées avec un de ses enfants (sinon fuite — IDOR).
 router.get('/file/:id/thumb', requireAuth, async (req, res) => {
   try {
+    if (req.user.type === 'parent') {
+      const photo = await prisma.photo.findUnique({
+        where: { id: Number(req.params.id) },
+        include: { tags: { include: { campeur: { include: { parents: true } } } } },
+      });
+      if (!photo || !photo.thumbnailPath || photo.statut !== 'APPROVED') return res.status(404).end();
+      const parents = photo.tags.flatMap(t => t.campeur.parents);
+      if (!ownsAny(req.user, parents)) return res.status(403).end();
+      return res.sendFile(photo.thumbnailPath);
+    }
+    // Staff (PHOTOGRAPHE / APPROBATEUR / ADMIN)
     const photo = await prisma.photo.findUnique({ where: { id: Number(req.params.id) } });
     if (!photo || !photo.thumbnailPath) return res.status(404).end();
     res.sendFile(photo.thumbnailPath);
@@ -132,8 +151,8 @@ router.get('/file/:id', requireAuth, async (req, res) => {
     });
     if (!photo || photo.statut !== 'APPROVED') return res.status(404).end();
     if (req.user.type === 'parent') {
-      const allowed = photo.tags.some(t => t.campeur.parents.some(p => p.id === req.user.id));
-      if (!allowed) return res.status(403).end();
+      const parents = photo.tags.flatMap(t => t.campeur.parents);
+      if (!ownsAny(req.user, parents)) return res.status(403).end();
     }
     res.sendFile(photo.fichierPath);
   } catch (err) {

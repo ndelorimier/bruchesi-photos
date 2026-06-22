@@ -13,7 +13,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
 
-    const employe = await prisma.employe.findUnique({ where: { email } });
+    const employe = await prisma.employe.findUnique({ where: { email: String(email).trim().toLowerCase() } });
     if (!employe) return res.status(401).json({ error: 'Identifiants invalides' });
 
     const valid = await bcrypt.compare(password, employe.passwordHash);

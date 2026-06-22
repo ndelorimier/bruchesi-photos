@@ -41,16 +41,19 @@ router.get('/verify', async (req, res) => {
     const { token } = req.query;
     if (!token) return res.status(400).json({ error: 'Token manquant' });
 
-    const link = await prisma.magicLink.findUnique({ where: { token } });
+    const link = await prisma.magicLink.findUnique({ where: { token }, include: { parent: true } });
     if (!link || link.usedAt || link.expiresAt < new Date()) {
       return res.status(401).json({ error: 'Lien invalide ou expiré' });
     }
 
+    const email = link.parent.email;
     await prisma.magicLink.update({ where: { id: link.id }, data: { usedAt: new Date() } });
-    await prisma.parent.update({ where: { id: link.parentId }, data: { compteActif: true } });
+    // Activer TOUTES les lignes Parent de ce courriel (un parent peut avoir plusieurs enfants)
+    await prisma.parent.updateMany({ where: { email }, data: { compteActif: true } });
 
+    // Le jeton porte le COURRIEL : le parent voit tous ses enfants, pas seulement le premier
     const jwt_token = jwt.sign(
-      { id: link.parentId, type: 'parent' },
+      { email, type: 'parent' },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
