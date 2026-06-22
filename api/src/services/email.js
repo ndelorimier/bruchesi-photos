@@ -16,7 +16,7 @@ async function sendMagicLink(email, token) {
       <p>Bonjour,</p>
       <p>Cliquez sur le lien ci-dessous pour accéder aux photos de votre enfant :</p>
       <p><a href="${url}">${url}</a></p>
-      <p>Ce lien est valide 7 jours et à usage unique.</p>
+      <p>Ce lien est à usage unique. S'il a expiré, demandez-en un nouveau depuis la page de connexion.</p>
     `,
   });
 }

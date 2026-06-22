@@ -25,5 +25,5 @@ const imageFilter = (req, file, cb) => {
 };
 
 module.exports = multer({ storage: photoStorage, limits: { fileSize: 20 * 1024 * 1024 }, fileFilter: imageFilter });
-module.exports.memory = multer({ storage: memoryStorage, limits: { fileSize: 5 * 1024 * 1024 } });
-module.exports.single = (field) => multer({ storage: memoryStorage }).single(field);
+module.exports.memory = multer({ storage: memoryStorage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: imageFilter });
+module.exports.single = (field) => multer({ storage: memoryStorage, limits: { fileSize: 10 * 1024 * 1024 }, fileFilter: imageFilter }).single(field);

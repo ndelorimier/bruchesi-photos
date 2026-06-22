@@ -6,6 +6,10 @@ const rateLimit = require('../middleware/rateLimit');
 
 const magicLinkLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: 'Trop de demandes de lien. Réessayez dans 15 minutes.' });
 
+// Lien de connexion self-service : durée courte (le parent le demande et clique aussitôt).
+// Les liens d'accueil (import CSV / renvoi admin) gardent une durée longue, voir admin.js.
+const LOGIN_LINK_TTL_MS = 60 * 60 * 1000; // 1 heure
+
 // POST /api/auth/magic-link  { email }
 router.post('/magic-link', magicLinkLimiter, async (req, res) => {
   try {
@@ -21,8 +25,9 @@ router.post('/magic-link', magicLinkLimiter, async (req, res) => {
       return res.json({ message: 'Si cet email est enregistré, un lien vous a été envoyé.' });
     }
 
-    // Un seul magic link par email — lie au premier parent trouvé (les autres partagent le JWT)
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    // Un seul magic link par email — lie au premier parent trouvé (le JWT émis à la
+    // vérification porte le courriel et couvre donc tous les enfants).
+    const expiresAt = new Date(Date.now() + LOGIN_LINK_TTL_MS);
     const link = await prisma.magicLink.create({
       data: { parentId: parents[0].id, expiresAt },
     });
