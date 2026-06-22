@@ -1,0 +1,28 @@
+# Cloudflare Tunnel — expose l'app sur Internet en HTTPS sans ouvrir de port.
+#
+# Le conteneur établit une connexion SORTANTE vers le réseau Cloudflare ; il
+# n'écoute sur aucun port et fonctionne derrière un routeur résidentiel / CGNAT.
+# Il rejoint le réseau bruchesi-net pour atteindre nginx par son nom de service.
+#
+# Pré-requis :
+#   1. Domaine ajouté à Cloudflare + nameservers basculés chez GoDaddy (zone "Active").
+#   2. Tunnel créé dans Cloudflare Zero Trust → jeton copié dans le .env du NAS :
+#        CLOUDFLARED_TOKEN=eyJ...   (NE PAS committer — déjà couvert par .gitignore)
+#   3. Dans le tunnel, "Public hostname" : photos.campbruchesi.ca → http://nginx:80
+#      (Cloudflare crée le CNAME DNS automatiquement.)
+#
+# Démarrer :  docker-compose -f docker-compose.cloudflared.yml up -d
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: bruchesi-cloudflared
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}
+    restart: unless-stopped
+    networks:
+      - default
+
+networks:
+  default:
+    name: bruchesi-net
+    external: true
