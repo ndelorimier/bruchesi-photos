@@ -1,0 +1,4 @@
+# Les scripts shell DOIVENT rester en LF : un CRLF casse le shebang sous Alpine
+# (« /bin/sh^M: bad interpreter ») et empêche le conteneur de démarrer.
+*.sh text eol=lf
+entrypoint.sh text eol=lf
