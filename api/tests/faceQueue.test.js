@@ -55,3 +55,17 @@ test('processPhoto ignore les résultats avec similarity < 0.7', async () => {
 
   expect(prisma.photoTag.upsert).not.toHaveBeenCalled();
 });
+
+test('processPhoto marque la photo iaTraitee=true (sort de la file même sans visage reconnu)', async () => {
+  prisma.campeur.findMany.mockResolvedValue([]);
+  compreface.reconnaitre.mockResolvedValue([]); // aucun visage reconnu
+
+  await processPhoto({ id: 44, fichierPath: '/data/photos/pending/test3.jpg' }, prisma);
+
+  expect(prisma.photo.update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      where: { id: 44 },
+      data: { iaTraitee: true },
+    })
+  );
+});

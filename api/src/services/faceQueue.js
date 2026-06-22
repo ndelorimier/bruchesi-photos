@@ -2,7 +2,9 @@ const prisma = require('../db');
 const compreface = require('./compreface');
 
 const CONFIDENCE_THRESHOLD = 0.70;
+const TICK_MS = 3000;
 let running = false;
+let indisponibleSignale = false; // pour ne logger l'indisponibilité qu'une fois
 
 async function processPhoto(photo, prisma) {
   const campeurs = await prisma.campeur.findMany({
@@ -25,9 +27,12 @@ async function processPhoto(photo, prisma) {
     });
   }
 
+  // Marquer la photo comme traitée par l'IA : elle sort de la file même si
+  // aucun visage n'a été reconnu (sinon reprise en boucle infinie). Le statut
+  // reste PENDING — un approbateur valide toujours manuellement.
   await prisma.photo.update({
     where: { id: photo.id },
-    data: { statut: 'PENDING' }, // reste pending — approbateur doit valider
+    data: { iaTraitee: true },
   });
 }
 
@@ -36,14 +41,32 @@ function startWorker() {
     if (running) return;
     running = true;
     try {
-      const photo = await prisma.photo.findFirst({ where: { statut: 'PENDING', tags: { none: {} } }, orderBy: { uploadedAt: 'asc' } });
+      // Ne rien faire tant que CompreFace n'est pas joignable/configuré —
+      // évite de boucler sur des erreurs toutes les 3 s.
+      const etat = await compreface.ping();
+      if (etat !== 'ok') {
+        if (!indisponibleSignale) {
+          console.warn(`[faceQueue] CompreFace ${etat} — traitement en pause jusqu'à configuration.`);
+          indisponibleSignale = true;
+        }
+        return;
+      }
+      if (indisponibleSignale) {
+        console.log('[faceQueue] CompreFace de nouveau disponible — reprise du traitement.');
+        indisponibleSignale = false;
+      }
+
+      const photo = await prisma.photo.findFirst({
+        where: { statut: 'PENDING', iaTraitee: false },
+        orderBy: { uploadedAt: 'asc' },
+      });
       if (photo) await processPhoto(photo, prisma);
     } catch (err) {
       console.error('[faceQueue] Erreur:', err.message);
     } finally {
       running = false;
     }
-  }, 3000);
+  }, TICK_MS);
 }
 
 module.exports = { startWorker, processPhoto };

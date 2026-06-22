@@ -81,6 +81,7 @@ model Photo {
   uploadedById  Int
   uploadedAt    DateTime     @default(now())
   statut        StatutPhoto  @default(PENDING)
+  iaTraitee     Boolean      @default(false)
   approuvePar   Employe?     @relation("approver", fields: [approuveParId], references: [id])
   approuveParId Int?
   approuveAt    DateTime?
