@@ -1,12 +1,15 @@
-# CompreFace — stack officielle multi-conteneurs
-# Démarrer AVANT docker-compose.yml :
-#   docker-compose -f docker-compose.compreface.yml up -d
+# CompreFace — stack officielle multi-conteneurs (reconnaissance faciale locale)
+# Démarrer :  docker-compose -f docker-compose.compreface.yml up -d
 #
-# Après démarrage (2-3 min) :
-#   1. Ouvrir http://<IP_DU_NAS>:8000 (admin UI)
-#   2. Créer un compte → créer un service "Reconnaissance"
-#   3. Copier l'API key dans .env → COMPREFACE_API_KEY=xxx
+# Après démarrage (2-3 min, le moteur IA charge ses modèles) :
+#   1. Ouvrir http://<IP_DU_NAS>:8000 (interface admin) depuis le réseau local
+#   2. Créer un compte → créer une application → service "Recognition"
+#   3. Copier la clé API dans .env → COMPREFACE_API_KEY=xxx
 #   4. Redémarrer le service app : docker-compose restart app
+#
+# Versions figées (reproductibilité) + limites mémoire (protège l'app sur le
+# DS1520+ 8 Go). Le port 8000 n'est PAS routé par le tunnel Cloudflare : il
+# reste accessible uniquement sur le réseau local, jamais depuis Internet.
 
 version: '3.9'
 
@@ -18,6 +21,7 @@ services:
   compreface-db:
     image: postgres:11.5-alpine
     restart: unless-stopped
+    mem_limit: 512m
     networks:
       - bruchesi-net
     environment:
@@ -33,8 +37,9 @@ services:
       retries: 5
 
   compreface-core:
-    image: exadel/compreface-core:latest
+    image: exadel/compreface-core:1.2.0
     restart: unless-stopped
+    mem_limit: 3g
     networks:
       - bruchesi-net
     environment:
@@ -47,8 +52,9 @@ services:
       start_period: 60s
 
   compreface-api:
-    image: exadel/compreface-api:latest
+    image: exadel/compreface-api:1.2.0
     restart: unless-stopped
+    mem_limit: 1g
     networks:
       - bruchesi-net
     environment:
@@ -67,8 +73,9 @@ services:
         condition: service_healthy
 
   compreface-admin:
-    image: exadel/compreface-admin:latest
+    image: exadel/compreface-admin:1.2.0
     restart: unless-stopped
+    mem_limit: 1g
     networks:
       - bruchesi-net
     environment:
@@ -83,12 +90,12 @@ services:
       compreface-core:
         condition: service_healthy
 
-  # Proxy : expose l'API CompreFace sur le port 8000
-  # → dans .env : COMPREFACE_URL=http://compreface:8000
-  # Le service "app" le résout via le réseau bruchesi-net
+  # Proxy : expose l'API + l'admin CompreFace sur le port 8000 (réseau local)
+  # → dans .env : COMPREFACE_URL=http://compreface:8000 (résolu via bruchesi-net)
   compreface:
     image: nginx:alpine
     restart: unless-stopped
+    mem_limit: 64m
     networks:
       - bruchesi-net
     ports:
