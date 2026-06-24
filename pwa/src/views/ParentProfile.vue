@@ -13,6 +13,27 @@
         </p>
       </div>
 
+      <!-- Consentement reconnaissance faciale (Loi 25) -->
+      <div class="bg-gray-900 rounded-xl p-4 space-y-3">
+        <h2 class="font-semibold text-sm">🔐 Reconnaissance faciale</h2>
+        <p class="text-xs text-gray-400">
+          Pour identifier automatiquement votre enfant sur les photos, le camp utilise la reconnaissance
+          faciale, traitée localement (aucune donnée envoyée à un tiers). Ce traitement nécessite votre
+          consentement explicite. Vous pouvez le retirer en tout temps.
+          <router-link to="/confidentialite" class="text-blue-400">Politique de confidentialité</router-link>.
+        </p>
+        <button
+          @click="toggleConsent"
+          :disabled="consentBusy"
+          class="w-full rounded-lg py-2.5 text-sm font-semibold disabled:opacity-40"
+          :class="consent ? 'bg-gray-800 hover:bg-gray-700' : 'bg-green-700 hover:bg-green-600'"
+        >
+          {{ consentBusy ? '…' : (consent ? '✓ Consentement accordé — cliquer pour retirer' : 'J\'autorise la reconnaissance faciale') }}
+        </button>
+        <p v-if="consent" class="text-green-400 text-xs text-center">Reconnaissance faciale autorisée pour votre/vos enfant(s).</p>
+        <p v-else class="text-yellow-500 text-xs text-center">Non autorisée — vos photos seront identifiées manuellement par l'équipe.</p>
+      </div>
+
       <!-- Notifications push -->
       <div class="bg-gray-900 rounded-xl p-4 space-y-3">
         <h2 class="font-semibold text-sm">🔔 Notifications</h2>
@@ -67,11 +88,27 @@ const router = useRouter();
 const me = ref([]);
 const refSuccess = ref(false);
 const push = usePush();
+const consent = ref(false);
+const consentBusy = ref(false);
 
 onMounted(async () => {
   me.value = (await axios.get('/api/parents/me')).data;
+  consent.value = !!me.value[0]?.consentementBiometrie;
   push.refresh();
 });
+
+async function toggleConsent() {
+  consentBusy.value = true;
+  try {
+    const next = !consent.value;
+    await axios.put('/api/parents/consent', { consent: next });
+    consent.value = next;
+  } catch {
+    /* on garde l'état affiché si erreur */
+  } finally {
+    consentBusy.value = false;
+  }
+}
 
 async function uploadRef(e) {
   const form = new FormData();

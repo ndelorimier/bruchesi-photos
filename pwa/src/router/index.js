@@ -5,6 +5,7 @@ const routes = [
   { path: '/login', component: () => import('../views/LoginView.vue'), meta: { public: true } },
   { path: '/auth/verify', component: () => import('../views/AuthVerify.vue'), meta: { public: true } },
   { path: '/reset-password', component: () => import('../views/ResetPassword.vue'), meta: { public: true } },
+  { path: '/confidentialite', component: () => import('../views/Confidentialite.vue'), meta: { public: true } },
   { path: '/', component: () => import('../views/ParentGallery.vue'), meta: { role: 'parent' } },
   { path: '/alertes', component: () => import('../views/ParentAlerts.vue'), meta: { role: 'parent' } },
   { path: '/profil', component: () => import('../views/ParentProfile.vue'), meta: { role: 'parent' } },

@@ -110,4 +110,21 @@ router.post('/reference-photo', ...parentOnly, upload.memory.single('file'), asy
   }
 });
 
+// PUT /api/parents/consent  { consent: boolean }
+// Consentement explicite au traitement biométrique (reconnaissance faciale) — Loi 25.
+// Appliqué à toutes les lignes Parent du courriel (donc tous les enfants).
+router.put('/consent', ...parentOnly, async (req, res) => {
+  try {
+    const consent = req.body.consent === true;
+    await prisma.parent.updateMany({
+      where: whereForUser(req.user),
+      data: { consentementBiometrie: consent, consentementAt: consent ? new Date() : null },
+    });
+    res.json({ ok: true, consentementBiometrie: consent });
+  } catch (err) {
+    console.error('consent error:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 module.exports = router;

@@ -61,6 +61,7 @@ async function start() {
   validerEnv();
   await prisma.$connect();
   require('./services/faceQueue').startWorker();
+  require('./services/retention').startRetention();
   app.listen(PORT, () => console.log(`API running on port ${PORT}`));
 }
 

@@ -47,6 +47,8 @@ model Parent {
   campeur           Campeur            @relation(fields: [campeurId], references: [id])
   campeurId         Int
   compteActif       Boolean            @default(false)
+  consentementBiometrie Boolean        @default(false)
+  consentementAt    DateTime?
   magicLinks        MagicLink[]
   pushSubscriptions PushSubscription[]
   notifications     Notification[]

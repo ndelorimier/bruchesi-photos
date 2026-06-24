@@ -70,6 +70,10 @@
         class="w-full text-xs text-gray-500 hover:text-gray-300 transition text-center pt-2">
         {{ view === 'employe' ? '← Connexion parent (magic link)' : 'Accès employé / admin →' }}
       </button>
+
+      <router-link to="/confidentialite" class="block text-center text-[11px] text-gray-600 hover:text-gray-400 transition">
+        Politique de confidentialité
+      </router-link>
     </div>
   </div>
 </template>

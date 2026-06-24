@@ -19,9 +19,14 @@
               {{ p.prenom }} · enfant : {{ p.campeur.prenom }} {{ p.campeur.nom }} ({{ p.campeur.semaine.nom }})
             </div>
           </div>
-          <span class="text-[10px] px-2 py-0.5 rounded-full shrink-0" :class="p.compteActif ? 'bg-green-900 text-green-300' : 'bg-gray-800 text-gray-400'">
-            {{ p.compteActif ? '🟢 Actif' : '⚪ Jamais connecté' }}
-          </span>
+          <div class="flex flex-col items-end gap-1 shrink-0">
+            <span class="text-[10px] px-2 py-0.5 rounded-full" :class="p.compteActif ? 'bg-green-900 text-green-300' : 'bg-gray-800 text-gray-400'">
+              {{ p.compteActif ? '🟢 Actif' : '⚪ Jamais connecté' }}
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full" :class="p.consentementBiometrie ? 'bg-blue-900 text-blue-300' : 'bg-gray-800 text-gray-500'">
+              {{ p.consentementBiometrie ? '🔐 Reco consentie' : '🚫 Reco non consentie' }}
+            </span>
+          </div>
         </div>
         <div class="flex gap-2">
           <button
