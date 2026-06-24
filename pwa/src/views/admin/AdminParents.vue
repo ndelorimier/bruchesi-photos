@@ -3,6 +3,15 @@
     <div class="bg-gray-900 rounded-xl p-4 space-y-3">
       <h2 class="font-semibold text-sm">Parents <span v-if="parents" class="text-gray-500 font-normal">({{ parents.length }})</span></h2>
 
+      <!-- Invitations en attente -->
+      <div v-if="enAttente > 0" class="flex items-center justify-between gap-2 bg-amber-900/30 border border-amber-800 rounded-lg p-3">
+        <span class="text-xs text-amber-200">{{ enAttente }} parent(s) jamais invité(s)</span>
+        <button @click="inviterEnAttente" :disabled="invBusy"
+          class="bg-amber-700 hover:bg-amber-600 disabled:opacity-40 rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap">
+          {{ invBusy ? 'Envoi…' : '✉️ Envoyer les invitations' }}
+        </button>
+      </div>
+
       <input
         v-model="recherche"
         placeholder="🔍 Rechercher par email ou enfant…"
@@ -22,6 +31,9 @@
           <div class="flex flex-col items-end gap-1 shrink-0">
             <span class="text-[10px] px-2 py-0.5 rounded-full" :class="p.compteActif ? 'bg-green-900 text-green-300' : 'bg-gray-800 text-gray-400'">
               {{ p.compteActif ? '🟢 Actif' : '⚪ Jamais connecté' }}
+            </span>
+            <span v-if="!p.compteActif" class="text-[10px] px-2 py-0.5 rounded-full" :class="p.invite ? 'bg-indigo-900 text-indigo-300' : 'bg-yellow-900 text-yellow-300'">
+              {{ p.invite ? '✉️ Invité' : '⏳ Jamais invité' }}
             </span>
             <span class="text-[10px] px-2 py-0.5 rounded-full" :class="p.consentementBiometrie ? 'bg-blue-900 text-blue-300' : 'bg-gray-800 text-gray-500'">
               {{ p.consentementBiometrie ? '🔐 Reco consentie' : '🚫 Reco non consentie' }}
@@ -52,12 +64,35 @@ import axios from 'axios';
 const parents = ref(null);
 const recherche = ref('');
 const sending = ref(null);
+const invBusy = ref(false);
 const msg = ref(null);
 
 onMounted(load);
 
 async function load() {
   parents.value = (await axios.get('/api/admin/parents')).data;
+}
+
+// Nombre de COURRIELS uniques jamais invités (et pas encore actifs)
+const enAttente = computed(() => {
+  if (!parents.value) return 0;
+  const emails = new Set();
+  for (const p of parents.value) if (!p.invite && !p.compteActif) emails.add(p.email);
+  return emails.size;
+});
+
+async function inviterEnAttente() {
+  invBusy.value = true;
+  msg.value = null;
+  try {
+    const r = (await axios.post('/api/admin/parents/invite-pending')).data;
+    msg.value = { ok: true, text: `✓ ${r.envoyees} invitation(s) envoyée(s)${r.echecs ? `, ${r.echecs} échec(s)` : ''}.` };
+    await load();
+  } catch (err) {
+    msg.value = { ok: false, text: err.response?.data?.error || "Erreur lors de l'envoi." };
+  } finally {
+    invBusy.value = false;
+  }
 }
 
 const filtres = computed(() => {

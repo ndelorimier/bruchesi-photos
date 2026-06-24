@@ -24,8 +24,8 @@
         <p class="text-gray-300 font-medium">Aperçu pour « {{ apercu.semaine }} » ({{ apercu.total }} ligne(s)) :</p>
         <ul class="space-y-0.5 text-gray-400">
           <li>🆕 <b class="text-green-400">{{ apercu.campeursCrees }}</b> enfant(s) à créer<template v-if="apercu.campeursExistants"> · {{ apercu.campeursExistants }} déjà présent(s)</template></li>
-          <li>👪 <b class="text-blue-300">{{ apercu.parentsLies }}</b> lien(s) parent à créer</li>
-          <li>✉️ <b class="text-amber-300">{{ apercu.invitationsEnvoyees }}</b> invitation(s) seront envoyées (nouveaux courriels)</li>
+          <li>👪 <b class="text-blue-300">{{ apercu.parentsLies }}</b> lien(s) parent à créer<template v-if="apercu.nouveauxParents"> · {{ apercu.nouveauxParents }} nouveau(x) courriel(s)</template></li>
+          <li class="text-gray-500">ℹ️ Aucun courriel ne sera envoyé — les invitations s'envoient depuis l'onglet <b>Parents</b>.</li>
           <li v-if="apercu.sansParent">⚠️ {{ apercu.sansParent }} enfant(s) sans courriel parent</li>
         </ul>
         <div v-if="apercu.ignorees.length" class="text-red-400">
@@ -34,7 +34,7 @@
         </div>
         <button @click="commit" :disabled="busy"
           class="w-full bg-blue-700 hover:bg-blue-600 disabled:opacity-40 rounded-lg py-2 text-sm font-semibold mt-1">
-          {{ busy ? 'Import en cours…' : `✓ Confirmer l'import (${apercu.invitationsEnvoyees} courriel(s) envoyé(s))` }}
+          {{ busy ? 'Import en cours…' : '✓ Confirmer l\'import (aucun courriel envoyé)' }}
         </button>
       </div>
 
@@ -151,7 +151,7 @@ async function commit() {
     form.append('semaineId', impSemaine.value);
     form.append('commit', 'true');
     const r = (await axios.post('/api/admin/import-xlsx', form)).data;
-    impMsg.value = { ok: true, text: `✓ ${r.campeursCrees} enfant(s) créé(s), ${r.parentsLies} lien(s) parent, ${r.invitationsEnvoyees} invitation(s) envoyée(s).` };
+    impMsg.value = { ok: true, text: `✓ ${r.campeursCrees} enfant(s), ${r.parentsLies} parent(s) créés. Envoie les invitations depuis l'onglet Parents.` };
     apercu.value = null;
     fichier.value = null;
     await load();
@@ -171,8 +171,7 @@ async function addManuel() {
       parents: man.value.parentEmail ? [{ prenom: man.value.parentPrenom, email: man.value.parentEmail }] : [],
     };
     const r = (await axios.post('/api/admin/campeurs', body)).data;
-    const inv = r.invitationsEnvoyees ? ` ${r.invitationsEnvoyees} invitation envoyée.` : '';
-    manMsg.value = { ok: true, text: `✓ ${man.value.prenom} ${man.value.nom} ${r.dejaExistant ? 'déjà présent' : 'ajouté'}.${inv}` };
+    manMsg.value = { ok: true, text: `✓ ${man.value.prenom} ${man.value.nom} ${r.dejaExistant ? 'déjà présent' : 'ajouté'}. Invitation à envoyer depuis l'onglet Parents.` };
     man.value = { prenom: '', nom: '', semaineId: '', parentPrenom: '', parentEmail: '' };
     await load();
   } catch (err) {

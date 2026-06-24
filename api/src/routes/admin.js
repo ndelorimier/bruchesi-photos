@@ -189,10 +189,9 @@ router.post('/import-xlsx', ...adminOnly, upload.dataFile.single('file'), async 
 
     const rapport = {
       semaine: semaine.nom, commit, total: rows.length,
-      campeursCrees: 0, campeursExistants: 0, parentsLies: 0, invitationsEnvoyees: 0, sansParent: 0, ignorees: [],
+      campeursCrees: 0, campeursExistants: 0, parentsLies: 0, nouveauxParents: 0, sansParent: 0, ignorees: [],
     };
     const vusCampeurs = new Set();
-    const nouveauxEmails = new Map(); // email -> parentId (1 lien par nouvel email)
 
     for (const row of rows) {
       if (!row.prenom || !row.nom) { rapport.ignorees.push({ ligne: row.ligne, raison: 'prénom ou nom manquant' }); continue; }
@@ -214,21 +213,14 @@ router.post('/import-xlsx', ...adminOnly, upload.dataFile.single('file'), async 
         rapport.parentsLies++;
         const estNouvel = !emailsConnus.has(par.email);
         if (commit && campeur) {
-          const p = await prisma.parent.create({ data: { email: par.email, prenom: par.prenom || '', nom: row.nom, campeurId: campeur.id } });
-          if (estNouvel && !nouveauxEmails.has(par.email)) nouveauxEmails.set(par.email, p.id);
+          await prisma.parent.create({ data: { email: par.email, prenom: par.prenom || '', nom: row.nom, campeurId: campeur.id } });
         }
-        if (estNouvel) { emailsConnus.add(par.email); if (!commit) rapport.invitationsEnvoyees++; }
+        if (estNouvel) { emailsConnus.add(par.email); rapport.nouveauxParents++; }
       }
     }
 
-    if (commit) {
-      for (const [email, parentId] of nouveauxEmails) {
-        const link = await prisma.magicLink.create({ data: { parentId, expiresAt: new Date(Date.now() + LIEN_ACCUEIL_TTL_MS) } });
-        await sendMagicLink(email, link.token).catch((e) => console.error('import invite SMTP:', e.message));
-        rapport.invitationsEnvoyees++;
-      }
-    }
-
+    // L'import N'ENVOIE PAS d'invitation : les liens d'accès sont envoyés
+    // séparément depuis l'onglet Parents (individuel ou « invitations en attente »).
     res.json(rapport);
   } catch (err) {
     console.error('import-xlsx error:', err);
@@ -423,16 +415,44 @@ router.delete('/employes/:id', ...adminOnly, async (req, res) => {
 // Parents
 // ---------------------------------------------------------------------------
 
-// GET /api/admin/parents — liste avec campeur + semaine
+// GET /api/admin/parents — liste avec campeur + semaine + statut d'invitation
 router.get('/parents', ...adminOnly, async (req, res) => {
   try {
     const parents = await prisma.parent.findMany({
-      include: { campeur: { include: { semaine: true } } },
+      include: { campeur: { include: { semaine: true } }, _count: { select: { magicLinks: true } } },
       orderBy: { createdAt: 'asc' },
     });
-    res.json(parents);
+    // invite = ce parent (ou un homonyme par courriel) a déjà reçu un lien
+    const invitParEmail = new Set(parents.filter((p) => p._count.magicLinks > 0).map((p) => p.email));
+    res.json(parents.map((p) => ({ ...p, invite: invitParEmail.has(p.email) })));
   } catch (err) {
     console.error('parents GET error:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// POST /api/admin/parents/invite-pending — envoie une invitation à chaque COURRIEL
+// jamais invité (et pas encore actif). Un seul envoi par courriel.
+router.post('/parents/invite-pending', ...adminOnly, async (req, res) => {
+  try {
+    const parents = await prisma.parent.findMany({ include: { _count: { select: { magicLinks: true } } } });
+    const parEmail = new Map(); // email -> { parentId, invite, actif }
+    for (const p of parents) {
+      const e = parEmail.get(p.email) || { parentId: p.id, invite: false, actif: false };
+      if (p._count.magicLinks > 0) e.invite = true;
+      if (p.compteActif) e.actif = true;
+      parEmail.set(p.email, e);
+    }
+    let envoyees = 0, echecs = 0;
+    for (const [email, info] of parEmail) {
+      if (info.invite || info.actif) continue; // déjà invité ou déjà connecté
+      const link = await prisma.magicLink.create({ data: { parentId: info.parentId, expiresAt: new Date(Date.now() + LIEN_ACCUEIL_TTL_MS) } });
+      try { await sendMagicLink(email, link.token); envoyees++; }
+      catch (e) { echecs++; console.error('invite-pending SMTP:', e.message); }
+    }
+    res.json({ ok: true, envoyees, echecs });
+  } catch (err) {
+    console.error('invite-pending error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -499,21 +519,17 @@ router.post('/campeurs', ...adminOnly, async (req, res) => {
     const dejaExistant = !!campeur;
     if (!campeur) campeur = await prisma.campeur.create({ data: { prenom: prenom.trim(), nom: nom.trim(), semaineId: Number(semaineId) } });
 
-    let invitationsEnvoyees = 0;
+    // Pas d'invitation ici non plus : envoyée séparément depuis l'onglet Parents.
+    let parentsCrees = 0;
     for (const par of (Array.isArray(parents) ? parents : [])) {
       const email = String(par.email || '').trim().toLowerCase();
       if (!isEmail(email)) continue;
       const lie = await prisma.parent.findFirst({ where: { email, campeurId: campeur.id } });
       if (lie) continue;
-      const p = await prisma.parent.create({ data: { email, prenom: (par.prenom || '').trim(), nom: nom.trim(), campeurId: campeur.id } });
-      const dejaConnu = await prisma.parent.count({ where: { email, NOT: { id: p.id } } });
-      if (dejaConnu === 0) {
-        const link = await prisma.magicLink.create({ data: { parentId: p.id, expiresAt: new Date(Date.now() + LIEN_ACCUEIL_TTL_MS) } });
-        await sendMagicLink(email, link.token).catch((e) => console.error('manual invite SMTP:', e.message));
-        invitationsEnvoyees++;
-      }
+      await prisma.parent.create({ data: { email, prenom: (par.prenom || '').trim(), nom: nom.trim(), campeurId: campeur.id } });
+      parentsCrees++;
     }
-    res.status(201).json({ ok: true, campeurId: campeur.id, dejaExistant, invitationsEnvoyees });
+    res.status(201).json({ ok: true, campeurId: campeur.id, dejaExistant, parentsCrees });
   } catch (err) {
     console.error('create campeur error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
