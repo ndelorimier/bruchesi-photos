@@ -20,6 +20,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Le SW Workbox généré importe nos gestionnaires de push/notificationclick
+        importScripts: ['/push-sw.js'],
         runtimeCaching: [
           {
             urlPattern: /^\/api\/parents\/photos/,

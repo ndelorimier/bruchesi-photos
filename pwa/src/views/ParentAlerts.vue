@@ -13,11 +13,6 @@
       </div>
       <p v-if="!notifs.length" class="text-center text-gray-500 py-12">Aucune alerte</p>
     </div>
-    <nav class="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 flex">
-      <router-link to="/" class="flex-1 py-3 text-center text-xs" active-class="text-green-400">📸 Photos</router-link>
-      <router-link to="/alertes" class="flex-1 py-3 text-center text-xs" active-class="text-green-400">🔔 Alertes</router-link>
-      <router-link to="/profil" class="flex-1 py-3 text-center text-xs" active-class="text-green-400">👤 Profil</router-link>
-    </nav>
   </div>
 </template>
 
