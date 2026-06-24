@@ -3,9 +3,8 @@
     <div class="w-full max-w-sm bg-gray-900 rounded-xl p-8 space-y-6">
 
       <div class="text-center">
-        <div class="text-4xl mb-2">📸</div>
-        <h1 class="text-xl font-bold text-white">Bruchési Photos</h1>
-        <p class="text-gray-400 text-sm mt-1">
+        <img src="/logo-campbru.png" alt="Camp Bruchési" class="mx-auto h-28 w-auto mb-3" />
+        <p class="text-gray-400 text-sm">
           {{ sousTitre }}
         </p>
       </div>
