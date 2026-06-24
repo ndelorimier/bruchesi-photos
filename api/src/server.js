@@ -19,6 +19,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/employes', require('./routes/employes'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/campeurs', require('./routes/campeurs'));
+app.use('/api/semaines', require('./routes/semaines'));
 app.use('/api/photos', require('./routes/photos'));
 app.use('/api/parents', require('./routes/parents'));
 app.use('/api/push', require('./routes/push'));

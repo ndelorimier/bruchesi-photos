@@ -7,8 +7,11 @@
 
     <div class="p-3 space-y-3 pb-24">
       <div v-for="photo in photos" :key="photo.id" class="bg-gray-900 rounded-xl overflow-hidden">
-        <img :src="`/api/photos/file/${photo.id}/thumb`" class="w-full aspect-video object-cover" />
+        <AuthImg :src="`/api/photos/file/${photo.id}/thumb`" class="w-full aspect-video object-cover bg-gray-800" />
         <div class="p-3 space-y-2">
+          <div class="text-xs" :class="photo.semaine ? 'text-gray-400' : 'text-yellow-500'">
+            📅 {{ photo.semaine ? photo.semaine.nom : 'Aucune semaine (anciennes photos)' }}
+          </div>
           <!-- Campeurs sélectionnés -->
           <div class="flex flex-wrap gap-1">
             <span v-for="c in photo._sel" :key="c.id"
@@ -49,6 +52,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import AuthImg from '../components/AuthImg.vue';
 
 const photos = ref([]);
 const campeurs = ref([]);
@@ -73,7 +77,9 @@ function matches(photo) {
   if (!q) return [];
   const selIds = new Set(photo._sel.map(c => c.id));
   return campeurs.value
-    .filter(c => !selIds.has(c.id) && `${c.prenom} ${c.nom}`.toLowerCase().includes(q))
+    .filter(c => !selIds.has(c.id)
+      && (!photo.semaineId || c.semaineId === photo.semaineId) // limite à la semaine de la photo
+      && `${c.prenom} ${c.nom}`.toLowerCase().includes(q))
     .slice(0, 8);
 }
 

@@ -7,9 +7,11 @@ let running = false;
 let indisponibleSignale = false; // pour ne logger l'indisponibilité qu'une fois
 
 async function processPhoto(photo, prisma) {
-  const campeurs = await prisma.campeur.findMany({
-    where: { compreFaceSubjectId: { not: null } },
-  });
+  // Candidats : campeurs enrôlés. Si la photo est rattachée à une semaine,
+  // on se limite aux campeurs de CETTE semaine (évite les faux positifs inter-semaines).
+  const where = { compreFaceSubjectId: { not: null } };
+  if (photo.semaineId) where.semaineId = photo.semaineId;
+  const campeurs = await prisma.campeur.findMany({ where });
 
   const results = await compreface.reconnaitre(photo.fichierPath);
 

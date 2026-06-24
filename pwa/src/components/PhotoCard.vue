@@ -1,10 +1,9 @@
 <template>
   <div class="relative aspect-square cursor-pointer group" @click="$emit('click', photo)">
-    <img
+    <AuthImg
       :src="`/api/photos/file/${photo.id}/thumb`"
-      :alt="`Photo approuvée`"
+      alt="Photo approuvée"
       class="w-full h-full object-cover rounded-lg"
-      loading="lazy"
     />
     <div class="absolute bottom-1 left-1 flex gap-1 flex-wrap">
       <span
@@ -19,6 +18,7 @@
 </template>
 
 <script setup>
+import AuthImg from './AuthImg.vue';
 defineProps({ photo: Object });
 defineEmits(['click']);
 </script>

@@ -14,6 +14,7 @@ const approuvateurOnly = [requireAuth, requireRole('APPROBATEUR', 'ADMIN')];
 // POST /api/photos/upload — upload batch de photos
 router.post('/upload', ...staffOnly, upload.array('photos', 50), async (req, res) => {
   try {
+    const semaineId = req.body.semaineId ? Number(req.body.semaineId) : null;
     const created = [];
     for (const file of req.files) {
       const thumbDir = path.join(process.env.PHOTOS_PATH || '/data/photos', 'thumbs');
@@ -26,6 +27,7 @@ router.post('/upload', ...staffOnly, upload.array('photos', 50), async (req, res
           fichierPath: file.path,
           thumbnailPath: thumbPath,
           uploadedById: req.user.id,
+          semaineId,
           statut: 'PENDING',
         },
       });
@@ -43,7 +45,7 @@ router.get('/pending', ...approuvateurOnly, async (req, res) => {
   try {
     const photos = await prisma.photo.findMany({
       where: { statut: 'PENDING' },
-      include: { tags: { include: { campeur: true } } },
+      include: { tags: { include: { campeur: true } }, semaine: true },
       orderBy: { uploadedAt: 'asc' },
     });
     res.json(photos);
