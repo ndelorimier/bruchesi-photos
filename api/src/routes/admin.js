@@ -7,8 +7,11 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 const { isNonEmptyString, isEmail, isValidDate, isId } = require('../middleware/validate');
 const { sendMagicLink } = require('../services/email');
 const compreface = require('../services/compreface');
+const upload = require('../middleware/upload');
+const { parseCamperXlsx } = require('../services/camperImport');
 
 const adminOnly = [requireAuth, requireRole('ADMIN')];
+const LIEN_ACCUEIL_TTL_MS = 7 * 24 * 60 * 60 * 1000; // liens d'accueil (import) : 7 jours
 const ROLES = ['PHOTOGRAPHE', 'APPROBATEUR', 'ADMIN'];
 
 // ---------------------------------------------------------------------------
@@ -164,9 +167,78 @@ router.delete('/semaines/:id', ...adminOnly, async (req, res) => {
 // Import CSV
 // ---------------------------------------------------------------------------
 
+// POST /api/admin/import-xlsx  (multipart: file=xlsx CampBrain) body: semaineId, commit
+// commit absent/false = APERÇU (aucune écriture, aucun courriel). commit=true = import réel.
+// Déduplique les campeurs (prénom+nom+semaine) et n'envoie un lien qu'aux courriels NOUVEAUX
+// (un parent multi-semaines / multi-enfants n'est jamais réinvité).
+router.post('/import-xlsx', ...adminOnly, upload.dataFile.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu.' });
+    if (!isId(req.body.semaineId)) return res.status(400).json({ error: 'Sélectionnez une semaine.' });
+    const semaineId = Number(req.body.semaineId);
+    const semaine = await prisma.semaine.findUnique({ where: { id: semaineId } });
+    if (!semaine) return res.status(404).json({ error: 'Semaine introuvable.' });
+    const commit = req.body.commit === 'true' || req.body.commit === true;
+
+    let rows;
+    try { rows = await parseCamperXlsx(req.file.buffer); }
+    catch (e) { return res.status(400).json({ error: e.message }); }
+
+    const tous = await prisma.parent.findMany({ select: { email: true } });
+    const emailsConnus = new Set(tous.map((p) => p.email.toLowerCase()));
+
+    const rapport = {
+      semaine: semaine.nom, commit, total: rows.length,
+      campeursCrees: 0, campeursExistants: 0, parentsLies: 0, invitationsEnvoyees: 0, sansParent: 0, ignorees: [],
+    };
+    const vusCampeurs = new Set();
+    const nouveauxEmails = new Map(); // email -> parentId (1 lien par nouvel email)
+
+    for (const row of rows) {
+      if (!row.prenom || !row.nom) { rapport.ignorees.push({ ligne: row.ligne, raison: 'prénom ou nom manquant' }); continue; }
+      const cle = `${row.prenom.toLowerCase()}|${row.nom.toLowerCase()}`;
+      if (vusCampeurs.has(cle)) continue; // doublon intra-fichier
+      vusCampeurs.add(cle);
+      if (!row.parents.length) rapport.sansParent++;
+
+      let campeur = await prisma.campeur.findFirst({ where: { prenom: row.prenom, nom: row.nom, semaineId } });
+      if (campeur) rapport.campeursExistants++;
+      else {
+        rapport.campeursCrees++;
+        if (commit) campeur = await prisma.campeur.create({ data: { prenom: row.prenom, nom: row.nom, semaineId } });
+      }
+
+      for (const par of row.parents) {
+        const dejaLie = campeur ? await prisma.parent.findFirst({ where: { email: par.email, campeurId: campeur.id } }) : null;
+        if (dejaLie) continue;
+        rapport.parentsLies++;
+        const estNouvel = !emailsConnus.has(par.email);
+        if (commit && campeur) {
+          const p = await prisma.parent.create({ data: { email: par.email, prenom: par.prenom || '', nom: row.nom, campeurId: campeur.id } });
+          if (estNouvel && !nouveauxEmails.has(par.email)) nouveauxEmails.set(par.email, p.id);
+        }
+        if (estNouvel) { emailsConnus.add(par.email); if (!commit) rapport.invitationsEnvoyees++; }
+      }
+    }
+
+    if (commit) {
+      for (const [email, parentId] of nouveauxEmails) {
+        const link = await prisma.magicLink.create({ data: { parentId, expiresAt: new Date(Date.now() + LIEN_ACCUEIL_TTL_MS) } });
+        await sendMagicLink(email, link.token).catch((e) => console.error('import invite SMTP:', e.message));
+        rapport.invitationsEnvoyees++;
+      }
+    }
+
+    res.json(rapport);
+  } catch (err) {
+    console.error('import-xlsx error:', err);
+    res.status(500).json({ error: 'Erreur serveur — vérifiez le fichier.' });
+  }
+});
+
 // POST /api/admin/import-csv  (multipart, champ: file)
 // Rapport détaillé : créés, doublons, lignes ignorées avec raison
-router.post('/import-csv', ...adminOnly, require('../middleware/upload').single('file'), async (req, res) => {
+router.post('/import-csv', ...adminOnly, upload.dataFile.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu.' });
     const rows = parse(req.file.buffer, { columns: true, skip_empty_lines: true, trim: true });
@@ -411,6 +483,42 @@ router.delete('/parents/:id', ...adminOnly, async (req, res) => {
 // ---------------------------------------------------------------------------
 // Campeurs
 // ---------------------------------------------------------------------------
+
+// POST /api/admin/campeurs  { prenom, nom, semaineId, parents: [{ prenom, email }] }
+// Ajout manuel d'un enfant. Déduplique le campeur (prénom+nom+semaine) et les parents
+// (email+campeur) ; n'envoie un lien d'accueil qu'aux courriels nouveaux au système.
+router.post('/campeurs', ...adminOnly, async (req, res) => {
+  try {
+    const { prenom, nom, semaineId, parents } = req.body;
+    if (!isNonEmptyString(prenom) || !isNonEmptyString(nom)) return res.status(400).json({ error: 'Prénom et nom de l’enfant requis.' });
+    if (!isId(semaineId)) return res.status(400).json({ error: 'Semaine requise.' });
+    const semaine = await prisma.semaine.findUnique({ where: { id: Number(semaineId) } });
+    if (!semaine) return res.status(404).json({ error: 'Semaine introuvable.' });
+
+    let campeur = await prisma.campeur.findFirst({ where: { prenom: prenom.trim(), nom: nom.trim(), semaineId: Number(semaineId) } });
+    const dejaExistant = !!campeur;
+    if (!campeur) campeur = await prisma.campeur.create({ data: { prenom: prenom.trim(), nom: nom.trim(), semaineId: Number(semaineId) } });
+
+    let invitationsEnvoyees = 0;
+    for (const par of (Array.isArray(parents) ? parents : [])) {
+      const email = String(par.email || '').trim().toLowerCase();
+      if (!isEmail(email)) continue;
+      const lie = await prisma.parent.findFirst({ where: { email, campeurId: campeur.id } });
+      if (lie) continue;
+      const p = await prisma.parent.create({ data: { email, prenom: (par.prenom || '').trim(), nom: nom.trim(), campeurId: campeur.id } });
+      const dejaConnu = await prisma.parent.count({ where: { email, NOT: { id: p.id } } });
+      if (dejaConnu === 0) {
+        const link = await prisma.magicLink.create({ data: { parentId: p.id, expiresAt: new Date(Date.now() + LIEN_ACCUEIL_TTL_MS) } });
+        await sendMagicLink(email, link.token).catch((e) => console.error('manual invite SMTP:', e.message));
+        invitationsEnvoyees++;
+      }
+    }
+    res.status(201).json({ ok: true, campeurId: campeur.id, dejaExistant, invitationsEnvoyees });
+  } catch (err) {
+    console.error('create campeur error:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
 
 // DELETE /api/admin/campeurs/:id — cascade manuelle complète (tags, profils, parents et leurs données)
 router.delete('/campeurs/:id', ...adminOnly, async (req, res) => {
