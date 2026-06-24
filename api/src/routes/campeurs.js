@@ -24,7 +24,19 @@ router.get('/', ...staffOnly, async (req, res) => {
       include: { semaine: true, faceProfiles: true },
       orderBy: [{ nom: 'asc' }, { prenom: 'asc' }],
     });
-    res.json(campeurs);
+
+    // Nombre de photos APPROUVÉES par campeur (pour repérer ceux sans photo)
+    const ids = campeurs.map((c) => c.id);
+    let counts = {};
+    if (ids.length) {
+      const grouped = await prisma.photoTag.groupBy({
+        by: ['campeurId'],
+        where: { campeurId: { in: ids }, photo: { statut: 'APPROVED' } },
+        _count: { _all: true },
+      });
+      counts = Object.fromEntries(grouped.map((g) => [g.campeurId, g._count._all]));
+    }
+    res.json(campeurs.map((c) => ({ ...c, nbPhotos: counts[c.id] || 0 })));
   } catch (err) {
     console.error('campeurs GET error:', err);
     res.status(500).json({ error: 'Erreur serveur' });

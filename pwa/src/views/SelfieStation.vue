@@ -27,6 +27,15 @@
         </div>
       </div>
       <CameraCapture @captured="enrollSelfie" />
+
+      <div class="flex items-center gap-2 text-xs text-gray-500">
+        <span class="flex-1 border-t border-gray-700"></span>ou<span class="flex-1 border-t border-gray-700"></span>
+      </div>
+      <label class="block w-full border border-dashed border-gray-700 rounded-lg p-3 text-center cursor-pointer hover:border-gray-500">
+        <input type="file" accept="image/*" class="hidden" @change="uploadSelfie" />
+        <span class="text-gray-400 text-sm">📁 Importer une photo</span>
+      </label>
+
       <p v-if="success" class="text-green-400 text-sm text-center">✓ Enrôlé avec succès !</p>
       <p v-if="error" class="text-red-400 text-sm text-center">{{ error }}</p>
     </div>
@@ -66,6 +75,12 @@ async function search() {
 }
 
 function selectCampeur(c) { campeur.value = c; results.value = []; }
+
+function uploadSelfie(e) {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (f) enrollSelfie(f);
+}
 
 async function enrollSelfie(blob) {
   error.value = '';

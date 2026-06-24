@@ -73,6 +73,11 @@
         </select>
       </div>
       <input v-model="recherche" placeholder="🔍 Rechercher un campeur…" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm" />
+      <label class="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
+        <input type="checkbox" v-model="sansPhotoSeulement" />
+        📷 Afficher seulement les campeurs <b>sans photo</b>
+        <span v-if="sansPhotoSeulement && campeurs" class="text-gray-500">— {{ campeursFiltres.length }}</span>
+      </label>
       <p v-if="campeurs && !campeursFiltres.length" class="text-xs text-gray-500">Aucun campeur trouvé.</p>
       <div v-for="c in campeursFiltres" :key="c.id" class="flex items-center justify-between border border-gray-800 rounded-lg p-3 gap-2">
         <div>
@@ -80,6 +85,7 @@
           <div class="text-xs text-gray-500">{{ c.semaine.nom }}</div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
+          <span class="text-[10px] px-2 py-0.5 rounded-full" :class="c.nbPhotos ? 'bg-pink-900 text-pink-300' : 'bg-red-900 text-red-300'">📷 {{ c.nbPhotos }}</span>
           <span class="text-[10px] px-2 py-0.5 rounded-full" :class="badgeEnrolement(c.statut)">{{ libEnrolement(c.statut) }}</span>
           <button @click="remove(c)" class="text-xs bg-gray-800 hover:bg-red-900 rounded-lg px-3 py-1.5">🗑️</button>
         </div>
@@ -96,6 +102,7 @@ const semaines = ref([]);
 const campeurs = ref(null);
 const filtreSemaine = ref('');
 const recherche = ref('');
+const sansPhotoSeulement = ref(false);
 
 // Import
 const impSemaine = ref('');
@@ -183,9 +190,11 @@ async function addManuel() {
 
 const campeursFiltres = computed(() => {
   if (!campeurs.value) return [];
+  let list = campeurs.value;
+  if (sansPhotoSeulement.value) list = list.filter((c) => !c.nbPhotos);
   const q = recherche.value.trim().toLowerCase();
-  if (!q) return campeurs.value;
-  return campeurs.value.filter((c) => `${c.prenom} ${c.nom}`.toLowerCase().includes(q));
+  if (q) list = list.filter((c) => `${c.prenom} ${c.nom}`.toLowerCase().includes(q));
+  return list;
 });
 
 function badgeEnrolement(s) {
