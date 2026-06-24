@@ -64,7 +64,18 @@ model Employe {
   role          RoleEmploye
   photosUploaded Photo[]   @relation("uploader")
   photosApproved Photo[]   @relation("approver")
+  passwordResets PasswordReset[]
   createdAt     DateTime   @default(now())
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique @default(cuid())
+  employe   Employe  @relation(fields: [employeId], references: [id])
+  employeId Int
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
 }
 
 enum RoleEmploye {

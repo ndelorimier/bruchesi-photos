@@ -10,6 +10,7 @@ function rateLimit({ windowMs = 15 * 60 * 1000, max = 10, message = 'Trop de ten
   cleanup.unref();
 
   return (req, res, next) => {
+    if (process.env.NODE_ENV === 'test') return next(); // pas de limitation en tests
     const ip = req.ip || req.socket?.remoteAddress || 'unknown';
     const now = Date.now();
     let h = hits.get(ip);

@@ -21,4 +21,19 @@ async function sendMagicLink(email, token) {
   });
 }
 
-module.exports = { sendMagicLink };
+async function sendPasswordReset(email, token) {
+  const url = `${process.env.APP_URL}/reset-password?token=${token}`;
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: 'Réinitialisation de votre mot de passe — Bruchési Photos',
+    html: `
+      <p>Bonjour,</p>
+      <p>Vous avez demandé à réinitialiser votre mot de passe. Cliquez sur le lien ci-dessous :</p>
+      <p><a href="${url}">${url}</a></p>
+      <p>Ce lien est valable 1 heure et à usage unique. Si vous n'êtes pas à l'origine de cette demande, ignorez ce courriel.</p>
+    `,
+  });
+}
+
+module.exports = { sendMagicLink, sendPasswordReset };
